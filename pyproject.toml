@@ -1,0 +1,18 @@
+[project]
+name = "articledatabase"
+version = "0.1.0"
+description = "Article Database with BM25 search, Ollama scan, and web UI"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "rank-bm25>=0.2.2",
+    "requests>=2.34.2",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+]

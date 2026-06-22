@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[oc]
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+wheels/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# uv
+.python-version
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# Build artifacts
+*.spec
+
+# Runtime config
+app_config.json
+
+# Generated data
+articles_db.json
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Agent config
+.opencode/
+
+# Lock files (optional - uncomment if you want to ignore)
+# uv.lock
+# package-lock.json
