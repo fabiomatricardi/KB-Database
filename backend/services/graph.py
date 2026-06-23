@@ -214,6 +214,21 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
             return
 
         _graph_state["progress"] = 70
+        _graph_state["stage"] = "label"
+        _graph_state["message"] = "Labeling communities..."
+
+        label_model = model if model else ""
+        result = subprocess.run(
+            ["python", _PATCHER, "label", wiki_dir, "--backend", backend, "--model", label_model],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if result.returncode != 0:
+            _graph_state["message"] = f"Community labeling failed (using placeholders): {result.stderr[:150]}"
+
+        _graph_state["progress"] = 85
         _graph_state["stage"] = "html"
         _graph_state["message"] = "Generating graph HTML visualization..."
 
