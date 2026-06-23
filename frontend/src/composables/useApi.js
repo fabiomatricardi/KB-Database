@@ -75,6 +75,26 @@ export async function getChatHistory() {
   return data
 }
 
+export async function webSearch(query, maxResults = 10) {
+  const { data } = await api.get('/web/search', { params: { q: query, max_results: maxResults } })
+  return data
+}
+
+export async function webFetch(url) {
+  const { data } = await api.post('/web/fetch', { url })
+  return data
+}
+
+export async function loadWebContext(title, url, content) {
+  const { data } = await api.post('/chat/context/web', { title, url, content })
+  return data
+}
+
+export async function removeWebContext(url) {
+  const { data } = await api.delete('/chat/context/web', { params: { url } })
+  return data
+}
+
 export function chatMessageStream(message, onChunk, onDone, onError) {
   const controller = new AbortController()
 

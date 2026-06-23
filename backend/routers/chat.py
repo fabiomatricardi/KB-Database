@@ -1,12 +1,14 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
-from backend.models import ChatMessage, ChatContextRequest
+from backend.models import ChatMessage, ChatContextRequest, WebContextRequest
 from backend.services.chat import (
     get_context,
     load_context,
     clear_context,
     remove_context,
+    load_web_context,
+    remove_web_context,
     chat_stream,
     clear_history,
     get_history,
@@ -35,6 +37,16 @@ def api_chat_clear_context():
 @router.delete("/context/{file_path:path}")
 def api_chat_remove_context(file_path: str):
     return remove_context(file_path)
+
+
+@router.post("/context/web")
+def api_chat_load_web_context(req: WebContextRequest):
+    return load_web_context(req.title, req.url, req.content)
+
+
+@router.delete("/context/web")
+def api_chat_remove_web_context(url: str = Query(...)):
+    return remove_web_context(url)
 
 
 @router.post("/message")

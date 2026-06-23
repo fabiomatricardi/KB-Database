@@ -68,3 +68,13 @@ class ChatMessage(BaseModel):
 
 class ChatContextRequest(BaseModel):
     file_paths: list[str]
+
+
+class WebRequest(BaseModel):
+    url: str
+
+
+class WebContextRequest(BaseModel):
+    title: str
+    url: str
+    content: str

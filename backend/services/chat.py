@@ -6,16 +6,21 @@ import requests
 _state = {
     "context_files": [],
     "context_contents": [],
+    "web_contexts": [],
     "history": [],
 }
 
 
 def get_context():
     files = _state["context_files"]
+    web = _state["web_contexts"]
     total_size = sum(len(c) for c in _state["context_contents"])
+    total_size += sum(len(w["content"]) for w in web)
     return {
         "files": files,
         "count": len(files),
+        "web_contexts": web,
+        "web_count": len(web),
         "total_chars": total_size,
     }
 
@@ -41,6 +46,7 @@ def load_context(file_paths: list[str]) -> dict:
 def clear_context():
     _state["context_files"] = []
     _state["context_contents"] = []
+    _state["web_contexts"] = []
     _state["history"] = []
 
 
@@ -50,6 +56,19 @@ def remove_context(file_path: str) -> dict:
         _state["context_files"].pop(idx)
         _state["context_contents"].pop(idx)
     return {"total": len(_state["context_files"])}
+
+
+def load_web_context(title: str, url: str, content: str) -> dict:
+    for w in _state["web_contexts"]:
+        if w["url"] == url:
+            return {"loaded": 0, "total": len(_state["web_contexts"])}
+    _state["web_contexts"].append({"title": title, "url": url, "content": content})
+    return {"loaded": 1, "total": len(_state["web_contexts"])}
+
+
+def remove_web_context(url: str) -> dict:
+    _state["web_contexts"] = [w for w in _state["web_contexts"] if w["url"] != url]
+    return {"total": len(_state["web_contexts"])}
 
 
 def build_system_prompt() -> str:
@@ -71,13 +90,29 @@ def build_system_prompt() -> str:
     return "\n".join(parts)
 
 
+def _build_web_injection(user_message: str) -> str:
+    if not _state["web_contexts"]:
+        return user_message
+
+    parts = ["[Web context loaded]", ""]
+    for w in _state["web_contexts"]:
+        parts.append("---")
+        parts.append(f"[Source: {w['title']} ({w['url']})]")
+        parts.append(w["content"])
+    parts.append("---")
+    parts.append("")
+    parts.append(f"User question: {user_message}")
+    return "\n".join(parts)
+
+
 def chat_stream(message: str, host: str, model: str):
     system_prompt = build_system_prompt()
+    user_message = _build_web_injection(message)
 
     messages = [{"role": "system", "content": system_prompt}]
     for h in _state["history"]:
         messages.append({"role": h["role"], "content": h["content"]})
-    messages.append({"role": "user", "content": message})
+    messages.append({"role": "user", "content": user_message})
 
     url = f"{host.rstrip('/')}/v1/chat/completions"
     payload = {

@@ -32,7 +32,7 @@ def main():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
-        "--name", "ArticleDatabase",
+        "--name", "ArticleDatabase-v0.2.2",
         "--add-data", f"frontend{os.pathsep}frontend",
         "--add-data", f"articles{os.pathsep}articles",
         "--add-data", f"articles_db.json{os.pathsep}.",
@@ -55,6 +55,12 @@ def main():
         "--hidden-import", "anyio._backends",
         "--hidden-import", "anyio._backends._asyncio",
         "--hidden-import", "httpx",
+        "--hidden-import", "ddgs",
+        "--hidden-import", "bs4",
+        "--hidden-import", "bs4.builder",
+        "--hidden-import", "lxml",
+        "--hidden-import", "lxml.etree",
+        "--hidden-import", "lxml.html",
         "--collect-all", "uvicorn",
         backend_main,
     ]
@@ -63,7 +69,7 @@ def main():
     result = subprocess.run(cmd, cwd=project_root)
 
     if result.returncode == 0:
-        exe_path = os.path.join(project_root, "dist", "ArticleDatabase.exe")
+        exe_path = os.path.join(project_root, "dist", "ArticleDatabase-v0.2.2.exe")
 
         # Unblock exe (Windows Smart App Control)
         try:

@@ -1,7 +1,7 @@
 [project]
 name = "articledatabase"
-version = "0.1.0"
-description = "Article Database with BM25 search, Ollama scan, and web UI"
+version = "0.2.2"
+description = "Article Database with BM25 search, Ollama scan, web search/fetch, and web UI"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,6 +10,10 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
     "pydantic>=2.0",
+    "ddgs>=9.14.4",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]

@@ -1,6 +1,6 @@
 # KB Database
 
-A local knowledge base application that combines BM25 full-text search with LLM-powered metadata extraction and chat. Runs as a standalone Windows executable or in development mode.
+A local knowledge base application that combines BM25 full-text search with LLM-powered metadata extraction, chat, and web search/fetch. Runs as a standalone Windows executable or in development mode.
 
 ## Stack
 
@@ -8,6 +8,7 @@ A local knowledge base application that combines BM25 full-text search with LLM-
 |-------|------------|
 | **Backend** | Python 3.12, FastAPI, uvicorn, rank-bm25, Pydantic, requests |
 | **Frontend** | Vue 3 (Composition API), Vite, PrimeIcons, Axios, Marked |
+| **Web Search/Fetch** | DuckDuckGo (`ddgs`), httpx, BeautifulSoup4, lxml |
 | **Packaging** | PyInstaller (single .exe) |
 | **LLM** | Ollama (OpenAI-compatible API) |
 | **Package Manager** | uv (Python), npm (Node.js) |
@@ -17,6 +18,7 @@ A local knowledge base application that combines BM25 full-text search with LLM-
 - **Search** — BM25 search through article metadata (title, subheading, summary)
 - **Deep Search** — Full-text BM25 search across `.txt`, `.md`, `.html` files
 - **Chat** — Multi-turn conversation with an LLM about loaded articles, with Markdown rendering
+- **Web Search & Fetch** — Search the web via DuckDuckGo and fetch/parse web pages, loaded as context into Chat
 - **Scan & Extract** — Use Ollama to extract metadata from article files and save to a JSON database
 - **Settings** — Configure Ollama host, model, directories, and server port
 
@@ -55,22 +57,24 @@ Your browser opens automatically to `http://localhost:8000`.
 ### Standalone Executable
 
 ```bash
-# Build the frontend
-cd frontend && npm install && npm run build && cd ..
+# Build everything (frontend + .exe)
+build-exe.bat
+```
 
-# Build the .exe
+Or manually:
+```bash
+cd frontend && npm install && npm run build && cd ..
 uv run python build.py
 ```
 
-The executable is created at `dist/ArticleDatabase.exe`.
+The executable is created at `dist/ArticleDatabase-v0.2.2.exe`.
 
 ## Building the Executable
 
 The `build.py` script:
-1. Cleans previous build artifacts
-2. Builds the Vue frontend (if not already built)
-3. Runs PyInstaller with `--onefile --noconsole`
-4. Automatically unblocks the exe for Windows Smart App Control
+1. Validates that the frontend is built
+2. Runs PyInstaller with `--onefile --noconsole`
+3. Automatically unblocks the exe for Windows Smart App Control
 
 ### Windows Smart App Control
 
@@ -78,11 +82,11 @@ Windows may block unsigned executables. The build script automatically unblocks 
 
 **Option 1: PowerShell (recommended)**
 ```powershell
-Unblock-File -Path "dist\ArticleDatabase.exe"
+Unblock-File -Path "dist\ArticleDatabase-v0.2.2.exe"
 ```
 
 **Option 2: File Properties**
-1. Right-click `dist\ArticleDatabase.exe`
+1. Right-click `dist\ArticleDatabase-v0.2.2.exe`
 2. Select **Properties**
 3. Check **Unblock** at the bottom
 4. Click **Apply**
@@ -101,8 +105,18 @@ KB_database/
 ├── backend/
 │   ├── main.py              # FastAPI app, CORS, static mount, shutdown endpoint
 │   ├── models.py            # Pydantic models for request/response
-│   ├── routers/             # API endpoints (search, deepsearch, scan, chat)
-│   └── services/            # Business logic (bm25, scanner, chat, config)
+│   ├── routers/
+│   │   ├── search.py        # BM25 search over article metadata
+│   │   ├── deepsearch.py    # Full-text BM25 search over files
+│   │   ├── scan.py          # Ollama metadata extraction
+│   │   ├── chat.py          # Chat context, history, SSE streaming
+│   │   └── web.py           # Web search & fetch endpoints
+│   └── services/
+│       ├── bm25.py          # BM25 search implementations
+│       ├── scanner.py       # Threaded Ollama scanning
+│       ├── chat.py          # Chat context management, LLM streaming
+│       ├── config.py        # JSON config persistence
+│       └── web.py           # DuckDuckGo search + httpx fetch
 ├── frontend/
 │   └── src/
 │       ├── App.vue          # Root component with sidebar navigation
@@ -110,6 +124,7 @@ KB_database/
 │       ├── components/      # View components (Search, DeepSearch, Chat, Scan, Settings)
 │       └── styles/          # Global dark theme CSS
 ├── build.py                 # PyInstaller build script
+├── build-exe.bat            # One-click build script
 ├── run-dev.bat              # Development launcher
 └── pyproject.toml           # Python dependencies
 ```
@@ -120,6 +135,7 @@ KB_database/
 2. **Vue frontend** communicates via `/api/*` endpoints (proxied in dev, served statically in exe)
 3. **PyInstaller** bundles Python, FastAPI, uvicorn, and the built frontend into a single `.exe`
 4. **Ollama** provides LLM capabilities for metadata extraction and chat (optional)
+5. **Web search/fetch** uses DuckDuckGo and httpx to search the web and parse pages into chat context
 
 ## CLI Tools (Legacy)
 
@@ -145,9 +161,12 @@ uv run scan.py --dir .\articles\ --host http://localhost:11434 --model mistral
 | `/api/scan` | POST | Start Ollama scan |
 | `/api/scan/status` | GET | Scan progress |
 | `/api/ollama/models?filter_free=` | GET | List Ollama models |
-| `/api/chat/context` | GET/POST/DELETE | Manage chat context |
+| `/api/chat/context` | GET/POST/DELETE | Manage file-based chat context |
+| `/api/chat/context/web` | POST/DELETE | Manage web-based chat context |
 | `/api/chat/message` | POST | Send chat message (SSE stream) |
 | `/api/chat/history` | GET/DELETE | Conversation history |
+| `/api/web/search?q=&max_results=` | GET | Search the web via DuckDuckGo |
+| `/api/web/fetch` | POST | Fetch and parse a URL |
 | `/api/settings` | GET/POST | App configuration |
 | `/api/shutdown` | POST | Stop application |
 

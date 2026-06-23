@@ -200,6 +200,43 @@ uv run scan.py --dir .\articles\ --host http://localhost:11434 --model mistral
 
 ---
 
+## Web Search & Fetch
+
+Search the web and load pages as context for Chat conversations.
+
+### Web Panel
+
+1. Click the **globe icon** in the Chat view header to open the Web Tools panel
+2. The panel has two tabs: **Search** and **Fetch URL**
+
+**Search tab:**
+1. Type a query and press Enter or click Search
+2. Browse the results — each shows title, URL, and snippet
+3. Click **Fetch & Load** on any result to fetch the full page and load it as chat context
+
+**Fetch URL tab:**
+1. Paste a URL and click Fetch
+2. Preview the extracted content (title, character count, text preview)
+3. Click **Load to Chat** to add it as context
+
+### Auto-search Web
+
+1. Check **"Search web before sending"** below the chat input
+2. Type your message and send it
+3. The system automatically searches the web, fetches top results, and loads them as context
+4. A green indicator confirms how many sources were loaded
+5. A system message appears in the chat: "🌐 N web source(s) loaded. Ask a follow-up question about them."
+6. Your question is then sent with web context included
+
+### Web Context in Chat
+
+- Web sources appear as green chips in the context bar at the top
+- Web content is prepended to your messages (not the system prompt)
+- Remove individual web sources by clicking the X on their chip
+- Use **Clear All** to remove all context (files + web sources)
+
+---
+
 ## API Reference
 
 | Endpoint | Method | Description |
@@ -209,10 +246,13 @@ uv run scan.py --dir .\articles\ --host http://localhost:11434 --model mistral
 | `/api/scan` | POST | Start Ollama scan |
 | `/api/scan/status` | GET | Scan progress |
 | `/api/ollama/models?filter_free=` | GET | List Ollama models |
-| `/api/chat/context` | GET/POST/DELETE | Manage chat context |
+| `/api/chat/context` | GET/POST/DELETE | Manage file-based chat context |
+| `/api/chat/context/web` | POST/DELETE | Manage web-based chat context |
 | `/api/chat/message` | POST | Send chat message (SSE stream) |
 | `/api/chat/history` | GET | Get conversation history |
 | `/api/chat/history` | DELETE | Clear history |
+| `/api/web/search?q=&max_results=` | GET | Search the web via DuckDuckGo |
+| `/api/web/fetch` | POST | Fetch and parse a URL |
 | `/api/settings` | GET/PUT | App configuration |
 | `/api/shutdown` | POST | Stop application |
 
