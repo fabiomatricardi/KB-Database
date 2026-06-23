@@ -36,6 +36,7 @@ def main():
         "--add-data", f"frontend{os.pathsep}frontend",
         "--add-data", f"articles{os.pathsep}articles",
         "--add-data", f"articles_db.json{os.pathsep}.",
+        "--add-data", f"backend/services/graphify_patcher.py{os.pathsep}backend/services",
         "--hidden-import", "uvicorn.logging",
         "--hidden-import", "uvicorn.loops",
         "--hidden-import", "uvicorn.loops.auto",

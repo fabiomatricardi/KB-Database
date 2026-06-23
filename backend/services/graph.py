@@ -31,7 +31,12 @@ _graph_state = {
     "progress": 0,
 }
 
-_PATCHER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphify_patcher.py")
+_PATCHER = os.path.join(
+    sys._MEIPASS if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__)),
+    "backend", "services", "graphify_patcher.py"
+) if getattr(sys, "frozen", False) else os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "graphify_patcher.py"
+)
 
 
 def get_graph_status() -> dict:
