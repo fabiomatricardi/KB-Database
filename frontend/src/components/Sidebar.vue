@@ -17,7 +17,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <span class="version">v0.3.1</span>
+      <span class="version">v0.3.2</span>
     </div>
   </aside>
 </template>
