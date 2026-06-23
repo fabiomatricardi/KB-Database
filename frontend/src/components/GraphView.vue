@@ -25,7 +25,7 @@
     <div v-else class="graph-empty">
       <i class="pi pi-chart" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
       <p style="margin-bottom: 20px; color: var(--text-secondary);">
-        Build a knowledge graph from your articles using Ollama for entity extraction.
+        Build a knowledge graph from your articles using {{ backendLabel }} for entity extraction.
       </p>
       <button class="btn btn-primary" @click="startBuild" :disabled="building">
         <i class="pi pi-play"></i> Build Knowledge Graph
@@ -35,9 +35,16 @@
       </p>
     </div>
 
-    <div v-if="graphHtml" class="graph-chat">
-      <h3><i class="pi pi-comments"></i> Graph Chat</h3>
-      <div class="graph-chat-bar">
+    <div v-if="graphHtml" class="graph-tools">
+      <h3><i class="pi pi-comments"></i> Graph Tools</h3>
+
+      <div class="graph-tabs">
+        <button :class="['tab-btn', { active: activeTab === 'query' }]" @click="activeTab = 'query'">Query</button>
+        <button :class="['tab-btn', { active: activeTab === 'explain' }]" @click="activeTab = 'explain'">Explain</button>
+        <button :class="['tab-btn', { active: activeTab === 'path' }]" @click="activeTab = 'path'">Path</button>
+      </div>
+
+      <div v-if="activeTab === 'query'" class="graph-chat-bar">
         <input
           v-model="graphQuestion"
           type="text"
@@ -48,6 +55,28 @@
           <i class="pi pi-send"></i>
         </button>
       </div>
+
+      <div v-if="activeTab === 'explain'" class="graph-chat-bar">
+        <input
+          v-model="explainConcept"
+          type="text"
+          placeholder="Enter a concept to explain..."
+          @keyup.enter="askExplain"
+        />
+        <button class="btn btn-primary btn-sm" @click="askExplain" :disabled="!explainConcept.trim() || querying">
+          <i class="pi pi-info-circle"></i>
+        </button>
+      </div>
+
+      <div v-if="activeTab === 'path'" class="graph-path-bar">
+        <input v-model="pathStart" type="text" placeholder="Start concept" />
+        <i class="pi pi-arrow-right" style="opacity: 0.5;"></i>
+        <input v-model="pathEnd" type="text" placeholder="End concept" @keyup.enter="askPath" />
+        <button class="btn btn-primary btn-sm" @click="askPath" :disabled="!pathStart.trim() || !pathEnd.trim() || querying">
+          <i class="pi pi-directions"></i>
+        </button>
+      </div>
+
       <div v-if="querying" class="loading" style="padding: 12px;">
         <div class="spinner"></div> Querying graph...
       </div>
@@ -60,20 +89,32 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { buildGraph, getGraphStatus, getGraphHtml, graphQuery } from '../composables/useApi.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { buildGraph, getGraphStatus, getGraphHtml, graphQuery, graphExplain, graphPathTo, getSettings } from '../composables/useApi.js'
 
 const graphHtml = ref(null)
 const building = ref(false)
 const buildMessage = ref('')
 const buildStage = ref('')
 const buildProgress = ref(0)
+const activeTab = ref('query')
 const graphQuestion = ref('')
+const explainConcept = ref('')
+const pathStart = ref('')
+const pathEnd = ref('')
 const querying = ref(false)
 const graphAnswer = ref('')
+const graphifyBackend = ref('ollama')
 let pollInterval = null
 
+const backendLabels = { ollama: 'Ollama', gemini: 'Gemini', openrouter: 'OpenRouter', openai: 'OpenAI' }
+const backendLabel = computed(() => backendLabels[graphifyBackend.value] || 'Ollama')
+
 onMounted(async () => {
+  try {
+    const s = await getSettings()
+    graphifyBackend.value = s.graphify_backend || 'ollama'
+  } catch (e) { /* use default */ }
   await checkGraph()
   await pollStatus()
 })
@@ -133,6 +174,34 @@ async function askGraph() {
   graphAnswer.value = ''
   try {
     const result = await graphQuery(graphQuestion.value)
+    graphAnswer.value = result.answer
+  } catch (e) {
+    graphAnswer.value = 'Error: ' + e.message
+  } finally {
+    querying.value = false
+  }
+}
+
+async function askExplain() {
+  if (!explainConcept.value.trim()) return
+  querying.value = true
+  graphAnswer.value = ''
+  try {
+    const result = await graphExplain(explainConcept.value)
+    graphAnswer.value = result.answer
+  } catch (e) {
+    graphAnswer.value = 'Error: ' + e.message
+  } finally {
+    querying.value = false
+  }
+}
+
+async function askPath() {
+  if (!pathStart.value.trim() || !pathEnd.value.trim()) return
+  querying.value = true
+  graphAnswer.value = ''
+  try {
+    const result = await graphPathTo(pathStart.value, pathEnd.value)
     graphAnswer.value = result.answer
   } catch (e) {
     graphAnswer.value = 'Error: ' + e.message

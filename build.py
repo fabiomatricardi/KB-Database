@@ -63,6 +63,8 @@ def main():
         "--hidden-import", "lxml.html",
         "--hidden-import", "tavily",
         "--hidden-import", "tavily._client",
+        "--hidden-import", "openai",
+        "--hidden-import", "openai._client",
         "--collect-all", "uvicorn",
         backend_main,
     ]

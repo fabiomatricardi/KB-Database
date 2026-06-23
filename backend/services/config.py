@@ -10,6 +10,12 @@ DEFAULTS = {
     "database": "articles_db.json",
     "server_port": 8000,
     "web_search_provider": "ddgs",
+    "graphify_backend": "ollama",
+    "graphify_model": "",
+    "graphify_api_key": "",
+    "graphify_base_url": "",
+    "graphify_max_output_tokens": 8192,
+    "graphify_max_concurrency": 1,
 }
 
 

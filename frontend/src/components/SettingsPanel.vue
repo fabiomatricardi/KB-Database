@@ -71,6 +71,43 @@
         </div>
       </div>
 
+      <div class="config-section-title">Knowledge Graph (graphify)</div>
+      <div class="config-grid">
+        <div class="form-group">
+          <label>Graphify Backend</label>
+          <select v-model="settings.graphify_backend">
+            <option value="ollama">Ollama (local, free)</option>
+            <option value="gemini">Gemini (free tier 20/day)</option>
+            <option value="openrouter">OpenRouter / NVIDIA</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Graphify Model (optional)</label>
+          <input v-model="settings.graphify_model" type="text" placeholder="empty = backend default" />
+        </div>
+      </div>
+      <div v-if="settings.graphify_backend !== 'ollama'" class="config-grid">
+        <div class="form-group">
+          <label>API Key</label>
+          <input v-model="settings.graphify_api_key" type="password" placeholder="required for non-Ollama backends" />
+        </div>
+        <div v-if="settings.graphify_backend === 'openrouter' || settings.graphify_backend === 'openai'" class="form-group">
+          <label>Base URL (optional)</label>
+          <input v-model="settings.graphify_base_url" type="text" :placeholder="settings.graphify_backend === 'openrouter' ? 'https://openrouter.ai/api/v1' : 'https://api.openai.com/v1'" />
+        </div>
+      </div>
+      <div class="config-grid">
+        <div class="form-group">
+          <label>Max Output Tokens</label>
+          <input v-model.number="settings.graphify_max_output_tokens" type="number" />
+        </div>
+        <div class="form-group">
+          <label>Max Concurrency</label>
+          <input v-model.number="settings.graphify_max_concurrency" type="number" min="1" max="8" />
+        </div>
+      </div>
+
       <button class="btn btn-primary" @click="save" :disabled="saving">
         <i class="pi pi-save"></i>
         {{ saving ? 'Saving...' : 'Save Settings' }}
@@ -107,6 +144,12 @@ const settings = ref({
   database: 'articles_db.json',
   server_port: 8000,
   web_search_provider: 'ddgs',
+  graphify_backend: 'ollama',
+  graphify_model: '',
+  graphify_api_key: '',
+  graphify_base_url: '',
+  graphify_max_output_tokens: 8192,
+  graphify_max_concurrency: 1,
 })
 
 const saving = ref(false)

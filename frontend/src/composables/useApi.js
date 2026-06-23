@@ -115,7 +115,17 @@ export async function getGraphHtml() {
 }
 
 export async function graphQuery(question) {
-  const { data } = await api.get('/graph/query', { params: { q: question } })
+  const { data } = await api.post('/graph/query', { question })
+  return data
+}
+
+export async function graphExplain(concept) {
+  const { data } = await api.post('/graph/explain', { concept })
+  return data
+}
+
+export async function graphPathTo(start, end) {
+  const { data } = await api.post('/graph/path', { start, end })
   return data
 }
 

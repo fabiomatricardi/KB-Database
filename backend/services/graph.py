@@ -1,8 +1,9 @@
 import json
 import os
-import shutil
 import subprocess
 import threading
+
+from openai import OpenAI
 
 
 _graph_state = {
@@ -15,6 +16,63 @@ _graph_state = {
 
 def get_graph_status() -> dict:
     return dict(_graph_state)
+
+
+def _build_graphify_env(backend: str, host: str, model: str, api_key: str, base_url: str,
+                        max_output_tokens: int, max_concurrency: int) -> dict:
+    env = os.environ.copy()
+    env["GRAPHIFY_MAX_OUTPUT_TOKENS"] = str(max_output_tokens)
+    env["GRAPHIFY_MAX_CONCURRENCY"] = str(max_concurrency)
+
+    if backend == "ollama":
+        env["OLLAMA_BASE_URL"] = host
+        env["OLLAMA_MODEL"] = model
+        env["OLLAMA_API_KEY"] = "ollama"
+    elif backend == "gemini":
+        env["GEMINI_API_KEY"] = api_key
+        env["GRAPHIFY_MODEL"] = model
+    elif backend == "openrouter":
+        env["OPENROUTER_APIKEY"] = api_key
+        env["OPENROUTER_BASE_URL"] = base_url or "https://openrouter.ai/api/v1"
+        env["OLLAMA_BASE_URL"] = base_url or "https://openrouter.ai/api/v1"
+        env["OLLAMA_API_KEY"] = api_key
+        env["GRAPHIFY_MODEL"] = model
+    elif backend == "openai":
+        env["OPENAI_API_KEY"] = api_key
+        env["OPENAI_BASE_URL"] = base_url or "https://api.openai.com/v1"
+        env["OLLAMA_BASE_URL"] = base_url or "https://api.openai.com/v1"
+        env["OLLAMA_API_KEY"] = api_key
+        env["GRAPHIFY_MODEL"] = model
+
+    return env
+
+
+def _get_llm_client(backend: str, host: str, model: str, api_key: str, base_url: str) -> tuple[OpenAI, str]:
+    if backend == "ollama":
+        url = host.rstrip("/")
+        if not url.endswith("/v1"):
+            url += "/v1"
+        return OpenAI(api_key="ollama", base_url=url, timeout=600), model
+    elif backend == "gemini":
+        return OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/", timeout=60), model
+    elif backend == "openrouter":
+        return OpenAI(api_key=api_key, base_url=base_url or "https://openrouter.ai/api/v1", timeout=60), model
+    elif backend == "openai":
+        return OpenAI(api_key=api_key, base_url=base_url or "https://api.openai.com/v1", timeout=60), model
+    else:
+        raise ValueError(f"Unknown backend: {backend}")
+
+
+def _call_llm(client: OpenAI, model: str, system_prompt: str, user_prompt: str) -> str:
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.2,
+    )
+    return response.choices[0].message.content or ""
 
 
 def build_wiki_from_articles(articles_dir: str, database_path: str, wiki_dir: str) -> int:
@@ -89,7 +147,9 @@ def build_wiki_from_articles(articles_dir: str, database_path: str, wiki_dir: st
     return count
 
 
-def _run_graph_build(articles_dir: str, database_path: str, host: str, model: str):
+def _run_graph_build(articles_dir: str, database_path: str, host: str, model: str,
+                     backend: str, api_key: str, base_url: str,
+                     max_output_tokens: int, max_concurrency: int):
     global _graph_state
     _graph_state["running"] = True
     _graph_state["message"] = "Preparing wiki files..."
@@ -109,17 +169,14 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
             _graph_state["running"] = False
             return
 
+        env = _build_graphify_env(backend, host, model, api_key, base_url, max_output_tokens, max_concurrency)
+
         _graph_state["stage"] = "extract"
-        _graph_state["message"] = "Running graphify extract (entity extraction)..."
+        _graph_state["message"] = f"Running graphify extract ({backend})..."
         _graph_state["progress"] = 40
 
-        env = os.environ.copy()
-        env["OLLAMA_BASE_URL"] = host
-        env["OLLAMA_MODEL"] = model
-        env["OLLAMA_API_KEY"] = "ollama"  # graphify requires non-empty value
-
         result = subprocess.run(
-            ["graphify", "extract", wiki_dir, "--backend", "ollama", "--max-concurrency", "1"],
+            ["graphify", "extract", wiki_dir, "--backend", backend, "--max-concurrency", str(max_concurrency)],
             env=env,
             capture_output=True,
             text=True,
@@ -134,8 +191,9 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
         _graph_state["stage"] = "label"
         _graph_state["message"] = "Running graphify label (community labeling)..."
 
+        label_model = model if model else ""
         result = subprocess.run(
-            ["graphify", "label", wiki_dir, "--backend", "ollama", "--model", model],
+            ["graphify", "label", wiki_dir, "--backend", backend, "--model", label_model],
             env=env,
             capture_output=True,
             text=True,
@@ -160,17 +218,19 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
         _graph_state["running"] = False
 
 
-def start_graph_build(articles_dir: str, database_path: str, host: str, model: str) -> dict:
+def start_graph_build(articles_dir: str, database_path: str, host: str, model: str,
+                      backend: str = "ollama", api_key: str = "", base_url: str = "",
+                      max_output_tokens: int = 8192, max_concurrency: int = 1) -> dict:
     if _graph_state["running"]:
         return {"error": "A graph build is already in progress."}
 
     thread = threading.Thread(
         target=_run_graph_build,
-        args=(articles_dir, database_path, host, model),
+        args=(articles_dir, database_path, host, model, backend, api_key, base_url, max_output_tokens, max_concurrency),
         daemon=True,
     )
     thread.start()
-    return {"status": "Graph build started."}
+    return {"status": "Graph build started.", "backend": backend}
 
 
 def get_graph_html(articles_dir: str) -> str | None:
@@ -182,21 +242,77 @@ def get_graph_html(articles_dir: str) -> str | None:
     return None
 
 
-def graph_query(question: str, articles_dir: str) -> str:
+def _get_graph_path(articles_dir: str) -> str | None:
     wiki_dir = os.path.join(articles_dir, "..", "wiki")
     graph_path = os.path.join(os.path.normpath(wiki_dir), "graphify-out", "graph.json")
-    if not os.path.isfile(graph_path):
+    return graph_path if os.path.isfile(graph_path) else None
+
+
+def _run_graphify_cli(args: list[str], timeout: int = 60) -> str:
+    result = subprocess.run(
+        ["graphify"] + args,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr[:300] or f"graphify exited with code {result.returncode}")
+    return result.stdout.strip()
+
+
+QUERY_SYSTEM_PROMPT = (
+    "You are a helpful assistant that answers questions about a knowledge graph. "
+    "Based on the graph traversal results below, provide a clear, concise answer "
+    "to the user's question. Use the node names and edge relationships to form "
+    "your answer. Be specific and reference the actual document names when relevant. "
+    "Format your answer in plain text. Do not use markdown code blocks."
+)
+
+EXPLAIN_SYSTEM_PROMPT = (
+    "You are a helpful assistant that explains concepts from a knowledge graph. "
+    "Based on the graph data below, provide a clear explanation of the concept, "
+    "what it connects to, and why it might be important. "
+    "Be specific and reference actual document names."
+)
+
+PATH_SYSTEM_PROMPT = (
+    "You are a helpful assistant that explains connections in a knowledge graph. "
+    "Based on the path found between two concepts, explain how they are related "
+    "and what the intermediate connections mean. Be specific."
+)
+
+
+def graph_query_llm(question: str, articles_dir: str, backend: str, model: str,
+                    api_key: str, base_url: str) -> str:
+    graph_path = _get_graph_path(articles_dir)
+    if not graph_path:
         return "No knowledge graph found. Build it first."
 
-    try:
-        result = subprocess.run(
-            ["graphify", "query", question, "--graph", graph_path, "--budget", "2000"],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-        return result.stdout.strip() if result.returncode == 0 else f"Query failed: {result.stderr[:200]}"
-    except FileNotFoundError:
-        return "graphify CLI not found."
-    except Exception as e:
-        return f"Error: {str(e)}"
+    raw = _run_graphify_cli(["query", question, "--graph", graph_path, "--budget", "2000"])
+
+    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+    return _call_llm(client, llm_model, QUERY_SYSTEM_PROMPT, f"Question: {question}\n\nGraph traversal results:\n{raw}")
+
+
+def graph_explain(concept: str, articles_dir: str, backend: str, model: str,
+                  api_key: str, base_url: str) -> str:
+    graph_path = _get_graph_path(articles_dir)
+    if not graph_path:
+        return "No knowledge graph found. Build it first."
+
+    raw = _run_graphify_cli(["explain", concept, "--graph", graph_path])
+
+    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+    return _call_llm(client, llm_model, EXPLAIN_SYSTEM_PROMPT, f"Explain: {concept}\n\nGraph data:\n{raw}")
+
+
+def graph_path(start: str, end: str, articles_dir: str, backend: str, model: str,
+               api_key: str, base_url: str) -> str:
+    graph_path = _get_graph_path(articles_dir)
+    if not graph_path:
+        return "No knowledge graph found. Build it first."
+
+    raw = _run_graphify_cli(["path", start, end, "--graph", graph_path])
+
+    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+    return _call_llm(client, llm_model, PATH_SYSTEM_PROMPT, f"Find path from '{start}' to '{end}'\n\nPath results:\n{raw}")
