@@ -213,23 +213,6 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
             _graph_state["running"] = False
             return
 
-        _graph_state["progress"] = 70
-        _graph_state["stage"] = "label"
-        _graph_state["message"] = "Running graphify label (community labeling)..."
-
-        label_model = model if model else ""
-        result = subprocess.run(
-            ["python", _PATCHER, "label", wiki_dir, "--backend", backend, "--model", label_model],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-        if result.returncode != 0:
-            _graph_state["message"] = f"Label failed: {result.stderr[:200]}"
-            _graph_state["running"] = False
-            return
-
         _graph_state["progress"] = 100
         _graph_state["stage"] = "done"
         _graph_state["message"] = "Knowledge graph built successfully!"

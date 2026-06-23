@@ -67,6 +67,7 @@ def main():
         "--hidden-import", "openai",
         "--hidden-import", "openai._client",
         "--collect-all", "uvicorn",
+        "--collect-all", "graphify",
         backend_main,
     ]
 

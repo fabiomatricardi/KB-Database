@@ -16,6 +16,7 @@ dependencies = [
     "ddgs>=9.14.4",
     "tavily-python>=0.7.0",
     "openai>=2.43.0",
+    "graphifyy>=0.8.46",
 ]
 
 [dependency-groups]
