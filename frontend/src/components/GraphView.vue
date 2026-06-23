@@ -38,34 +38,30 @@
       </div>
     </div>
 
-    <div v-if="graphHtml" class="graph-container">
+    <div class="graph-build-bar">
+      <div class="build-status-text" v-if="building">
+        <div class="spinner" style="width: 16px; height: 16px;"></div>
+        {{ buildMessage }} <span v-if="buildProgress > 0">({{ buildProgress }}%)</span>
+      </div>
+      <div class="build-status-text" v-else-if="buildMessage">{{ buildMessage }}</div>
+      <div class="build-status-text" v-else>Ready to build</div>
+      <button class="btn btn-primary" @click="startBuild" :disabled="building">
+        <i class="pi pi-play"></i>
+        {{ building ? 'Building...' : 'Build / Rebuild Knowledge Graph' }}
+      </button>
+    </div>
+
+    <div v-if="graphHtml && !building" class="graph-container">
       <div class="graph-frame-wrapper">
         <iframe :srcdoc="graphHtml" class="graph-iframe"></iframe>
       </div>
     </div>
 
-    <div v-else-if="building" class="graph-building">
-      <div class="loading">
-        <div class="spinner"></div>
-        {{ buildMessage }}
-      </div>
+    <div v-if="building" class="graph-building">
       <div class="progress-bar-container" v-if="buildProgress > 0">
         <div class="progress-bar" :style="{ width: buildProgress + '%' }"></div>
       </div>
       <div class="build-stage">{{ buildStage }}</div>
-    </div>
-
-    <div v-else class="graph-empty">
-      <i class="pi pi-chart" style="font-size: 48px; opacity: 0.3; margin-bottom: 16px; display: block;"></i>
-      <p style="margin-bottom: 20px; color: var(--text-secondary);">
-        Build a knowledge graph from your articles using {{ backendLabel }} for entity extraction.
-      </p>
-      <button class="btn btn-primary" @click="startBuild" :disabled="building">
-        <i class="pi pi-play"></i> Build Knowledge Graph
-      </button>
-      <p v-if="buildMessage && !building" style="margin-top: 12px; color: var(--text-secondary); font-size: 13px;">
-        {{ buildMessage }}
-      </p>
     </div>
 
     <div v-if="graphHtml" class="graph-tools">
@@ -171,6 +167,8 @@ async function checkGraph() {
     const result = await getGraphHtml()
     if (result.available) {
       graphHtml.value = result.html
+    } else {
+      graphHtml.value = null
     }
   } catch (e) { /* ignore */ }
 }
