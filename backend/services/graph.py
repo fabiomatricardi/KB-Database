@@ -116,6 +116,7 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
         env = os.environ.copy()
         env["OLLAMA_BASE_URL"] = host
         env["OLLAMA_MODEL"] = model
+        env["OLLAMA_API_KEY"] = "ollama"  # graphify requires non-empty value
 
         result = subprocess.run(
             ["graphify", "extract", wiki_dir, "--backend", "ollama", "--max-concurrency", "1"],
