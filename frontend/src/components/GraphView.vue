@@ -5,6 +5,39 @@
       <p>Build and explore a knowledge graph from your articles</p>
     </div>
 
+    <div class="graph-config-card">
+      <div class="config-header">
+        <i class="pi pi-cog"></i>
+        <span>Graphify Configuration</span>
+      </div>
+      <div class="config-flags">
+        <div class="config-flag">
+          <span class="flag-label">Backend</span>
+          <span class="flag-value" :class="'backend-' + graphifyBackend">{{ backendLabel }}</span>
+        </div>
+        <div class="config-flag">
+          <span class="flag-label">Model</span>
+          <span class="flag-value">{{ graphifyModel || '(backend default)' }}</span>
+        </div>
+        <div class="config-flag">
+          <span class="flag-label">Max Tokens</span>
+          <span class="flag-value">{{ graphifyMaxTokens }}</span>
+        </div>
+        <div class="config-flag">
+          <span class="flag-label">Concurrency</span>
+          <span class="flag-value">{{ graphifyConcurrency }}</span>
+        </div>
+        <div v-if="graphifyBackend !== 'ollama'" class="config-flag">
+          <span class="flag-label">API Key</span>
+          <span class="flag-value">{{ graphifyApiKey ? '••••••••' : '(not set)' }}</span>
+        </div>
+        <div v-if="graphifyBaseUrl" class="config-flag">
+          <span class="flag-label">Base URL</span>
+          <span class="flag-value flag-url">{{ graphifyBaseUrl }}</span>
+        </div>
+      </div>
+    </div>
+
     <div v-if="graphHtml" class="graph-container">
       <div class="graph-frame-wrapper">
         <iframe :srcdoc="graphHtml" class="graph-iframe"></iframe>
@@ -105,6 +138,11 @@ const pathEnd = ref('')
 const querying = ref(false)
 const graphAnswer = ref('')
 const graphifyBackend = ref('ollama')
+const graphifyModel = ref('')
+const graphifyApiKey = ref('')
+const graphifyBaseUrl = ref('')
+const graphifyMaxTokens = ref(8192)
+const graphifyConcurrency = ref(1)
 let pollInterval = null
 
 const backendLabels = { ollama: 'Ollama', gemini: 'Gemini', openrouter: 'OpenRouter', openai: 'OpenAI' }
@@ -114,7 +152,12 @@ onMounted(async () => {
   try {
     const s = await getSettings()
     graphifyBackend.value = s.graphify_backend || 'ollama'
-  } catch (e) { /* use default */ }
+    graphifyModel.value = s.graphify_model || ''
+    graphifyApiKey.value = s.graphify_api_key || ''
+    graphifyBaseUrl.value = s.graphify_base_url || ''
+    graphifyMaxTokens.value = s.graphify_max_output_tokens || 8192
+    graphifyConcurrency.value = s.graphify_max_concurrency || 1
+  } catch (e) { /* use defaults */ }
   await checkGraph()
   await pollStatus()
 })

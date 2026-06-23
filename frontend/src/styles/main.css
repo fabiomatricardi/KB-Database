@@ -1222,6 +1222,67 @@ select:focus {
   color: var(--text-secondary);
 }
 
+.graph-config-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.config-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.config-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.config-flag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.flag-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.flag-value {
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 2px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+}
+
+.flag-url {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backend-ollama { color: #4ade80; border: 1px solid #4ade8040; }
+.backend-gemini { color: #60a5fa; border: 1px solid #60a5fa40; }
+.backend-openrouter { color: #c084fc; border: 1px solid #c084fc40; }
+.backend-openai { color: #34d399; border: 1px solid #34d39940; }
+
 .graph-tools {
   margin-top: 16px;
   padding-top: 16px;
