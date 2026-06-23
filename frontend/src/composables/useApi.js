@@ -5,13 +5,17 @@ const api = axios.create({
   timeout: 120000,
 })
 
-export async function searchArticles(query, topN = 5) {
-  const { data } = await api.get('/search', { params: { q: query, top_n: topN } })
+export async function searchArticles(query, topN = 5, tags = null) {
+  const params = { q: query, top_n: topN }
+  if (tags) params.tags = tags
+  const { data } = await api.get('/search', { params })
   return data
 }
 
-export async function deepSearch(query, dir, topN = 5) {
-  const { data } = await api.get('/deepsearch', { params: { query, dir, top_n: topN } })
+export async function deepSearch(query, dir, topN = 5, tags = null) {
+  const params = { query, dir, top_n: topN }
+  if (tags) params.tags = tags
+  const { data } = await api.get('/deepsearch', { params })
   return data
 }
 
@@ -92,6 +96,26 @@ export async function loadWebContext(title, url, content) {
 
 export async function removeWebContext(url) {
   const { data } = await api.delete('/chat/context/web', { params: { url } })
+  return data
+}
+
+export async function buildGraph(config = {}) {
+  const { data } = await api.post('/graph/build', config)
+  return data
+}
+
+export async function getGraphStatus() {
+  const { data } = await api.get('/graph/status')
+  return data
+}
+
+export async function getGraphHtml() {
+  const { data } = await api.get('/graph/html')
+  return data
+}
+
+export async function graphQuery(question) {
+  const { data } = await api.get('/graph/query', { params: { q: question } })
   return data
 }
 

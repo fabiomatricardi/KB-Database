@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from backend.routers import search, deepsearch, scan, chat, web
+from backend.routers import search, deepsearch, scan, chat, web, graph
 from backend.services.config import load_config, save_config, DEFAULTS
 
 
@@ -46,6 +46,7 @@ app.include_router(deepsearch.router)
 app.include_router(scan.router)
 app.include_router(chat.router)
 app.include_router(web.router)
+app.include_router(graph.router)
 
 
 @app.get("/api/settings")

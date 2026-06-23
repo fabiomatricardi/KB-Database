@@ -17,7 +17,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <span class="version">v0.2.2</span>
+      <span class="version">v0.3.0</span>
     </div>
   </aside>
 </template>
@@ -34,6 +34,7 @@ const navItems = [
   { id: 'deepsearch', label: 'Deep Search', icon: 'pi pi-directions' },
   { id: 'chat', label: 'Chat', icon: 'pi pi-comments' },
   { id: 'scan', label: 'Scan & Extract', icon: 'pi pi-cloud-download' },
+  { id: 'graph', label: 'Knowledge Graph', icon: 'pi pi-chart' },
   { id: 'settings', label: 'Settings', icon: 'pi pi-cog' },
 ]
 </script>

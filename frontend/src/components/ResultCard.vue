@@ -7,6 +7,11 @@
       <div class="card-info">
         <div class="card-title">{{ title }}</div>
         <div class="card-subtitle">{{ subtitle }}</div>
+        <div v-if="tags && tags.length" class="card-tags">
+          <span v-for="tag in tags" :key="tag" class="tag-badge" @click.stop="$emit('tag-click', tag)">
+            #{{ tag }}
+          </span>
+        </div>
       </div>
       <div class="score-badge">{{ score.toFixed(2) }}</div>
       <i class="pi pi-chevron-down expand-icon" :class="{ open: isExpanded }"></i>
@@ -25,7 +30,10 @@ defineProps({
   score: Number,
   title: String,
   subtitle: String,
+  tags: { type: Array, default: () => [] },
 })
+
+defineEmits(['tag-click'])
 
 const isExpanded = ref(false)
 </script>

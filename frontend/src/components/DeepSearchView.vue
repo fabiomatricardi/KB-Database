@@ -16,7 +16,13 @@
         v-model="dir"
         type="text"
         placeholder="Directory path"
-        style="max-width: 240px;"
+        style="max-width: 200px;"
+      />
+      <input
+        v-model="tagFilter"
+        type="text"
+        placeholder="Filter by tags"
+        style="max-width: 180px;"
       />
       <div class="top-n-control">
         <label>Top</label>
@@ -26,6 +32,17 @@
         <i class="pi pi-directions"></i>
         Deep Search
       </button>
+    </div>
+
+    <div v-if="availableTags.length > 0" class="available-tags">
+      <span class="field-label">Tags:</span>
+      <span
+        v-for="tag in availableTags"
+        :key="tag"
+        class="tag-badge"
+        :class="{ active: tagFilter.includes(tag) }"
+        @click="toggleTag(tag)"
+      >#{{ tag }}</span>
     </div>
 
     <div v-if="loading" class="loading">
@@ -62,9 +79,16 @@
         :score="item.score"
         :title="item.title || item.filename"
         :subtitle="item.subheading || item.snippet"
+        :tags="item.tags || []"
+        @tag-click="toggleTag"
       >
         <div v-if="item.summary" class="field-label">Summary</div>
         <div v-if="item.summary" class="field-value">{{ item.summary }}</div>
+
+        <div v-if="item.toc && item.toc.length" class="field-label">Table of Contents</div>
+        <ul v-if="item.toc && item.toc.length" class="toc-list">
+          <li v-for="(heading, i) in item.toc" :key="i">{{ heading }}</li>
+        </ul>
 
         <div v-if="item.url && item.url !== 'None'" class="field-label">URL</div>
         <a
@@ -100,18 +124,35 @@ import ResultCard from './ResultCard.vue'
 
 const query = ref('')
 const dir = ref('.\\articles\\')
+const tagFilter = ref('')
 const topN = ref(5)
 const loading = ref(false)
 const results = ref(null)
 const loadingChat = ref(false)
 const chatLoaded = ref('')
+const availableTags = ref([])
+
+function toggleTag(tag) {
+  const tags = tagFilter.value.split(',').map(t => t.trim()).filter(Boolean)
+  const idx = tags.indexOf(tag)
+  if (idx >= 0) {
+    tags.splice(idx, 1)
+  } else {
+    tags.push(tag)
+  }
+  tagFilter.value = tags.join(', ')
+}
 
 async function doSearch() {
   if (!query.value.trim()) return
   loading.value = true
   chatLoaded.value = ''
   try {
-    results.value = await deepSearch(query.value, dir.value, topN.value)
+    const tags = tagFilter.value.trim() || null
+    results.value = await deepSearch(query.value, dir.value, topN.value, tags)
+    if (results.value.available_tags) {
+      availableTags.value = results.value.available_tags
+    }
   } catch (e) {
     results.value = { query: query.value, top_n: topN.value, results: [], total_indexed: 0, total_found: 0, error: e.message }
   } finally {

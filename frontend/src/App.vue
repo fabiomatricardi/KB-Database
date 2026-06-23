@@ -6,6 +6,7 @@
       <DeepSearchView v-if="activeView === 'deepsearch'" />
       <ChatView v-if="activeView === 'chat'" />
       <ScanView v-if="activeView === 'scan'" />
+      <GraphView v-if="activeView === 'graph'" />
       <SettingsPanel v-if="activeView === 'settings'" />
     </main>
   </div>
@@ -18,6 +19,7 @@ import SearchView from './components/SearchView.vue'
 import DeepSearchView from './components/DeepSearchView.vue'
 import ChatView from './components/ChatView.vue'
 import ScanView from './components/ScanView.vue'
+import GraphView from './components/GraphView.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 
 const activeView = ref('search')

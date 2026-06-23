@@ -9,6 +9,7 @@ DEFAULTS = {
     "articles_dir": ".\\articles\\",
     "database": "articles_db.json",
     "server_port": 8000,
+    "web_search_provider": "ddgs",
 }
 
 

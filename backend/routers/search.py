@@ -11,7 +11,8 @@ def api_search(
     q: str = Query(..., description="Search query"),
     top_n: int = Query(5, ge=1, le=50, description="Number of results"),
     database: str = Query(None, description="Path to JSON database"),
+    tags: str = Query(None, description="Comma-separated tags to filter by"),
 ):
     config = load_config()
     db_path = database or config["database"]
-    return search_database(q, db_path, top_n)
+    return search_database(q, db_path, top_n, tags)

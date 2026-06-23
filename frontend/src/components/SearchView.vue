@@ -2,7 +2,7 @@
   <div>
     <div class="view-header">
       <h2>Search Database</h2>
-      <p>Search article metadata (title, subheading, summary) using BM25 ranking</p>
+      <p>Search article metadata (title, subheading, summary, tags) using BM25 ranking</p>
     </div>
 
     <div class="search-bar">
@@ -12,6 +12,12 @@
         placeholder="Search articles... e.g. 'RAG', 'llama.cpp', 'OpenCode'"
         @keyup.enter="doSearch"
       />
+      <input
+        v-model="tagFilter"
+        type="text"
+        placeholder="Filter by tags (comma-separated)"
+        style="max-width: 220px;"
+      />
       <div class="top-n-control">
         <label>Top</label>
         <input v-model.number="topN" type="number" min="1" max="50" />
@@ -20,6 +26,17 @@
         <i class="pi pi-search"></i>
         Search
       </button>
+    </div>
+
+    <div v-if="availableTags.length > 0" class="available-tags">
+      <span class="field-label">Tags:</span>
+      <span
+        v-for="tag in availableTags"
+        :key="tag"
+        class="tag-badge"
+        :class="{ active: tagFilter.includes(tag) }"
+        @click="toggleTag(tag)"
+      >#{{ tag }}</span>
     </div>
 
     <div v-if="loading" class="loading">
@@ -45,9 +62,16 @@
         :score="item.score"
         :title="item.article.title"
         :subtitle="item.article.subheading"
+        :tags="item.article.tags || []"
+        @tag-click="toggleTag"
       >
         <div class="field-label">Summary</div>
         <div class="field-value">{{ item.article.summary }}</div>
+
+        <div v-if="item.article.toc && item.article.toc.length" class="field-label">Table of Contents</div>
+        <ul v-if="item.article.toc && item.article.toc.length" class="toc-list">
+          <li v-for="(heading, i) in item.article.toc" :key="i">{{ heading }}</li>
+        </ul>
 
         <div v-if="item.article.url && item.article.url !== 'None'" class="field-label">URL</div>
         <a
@@ -75,15 +99,32 @@ import { searchArticles } from '../composables/useApi.js'
 import ResultCard from './ResultCard.vue'
 
 const query = ref('')
+const tagFilter = ref('')
 const topN = ref(5)
 const loading = ref(false)
 const results = ref(null)
+const availableTags = ref([])
+
+function toggleTag(tag) {
+  const tags = tagFilter.value.split(',').map(t => t.trim()).filter(Boolean)
+  const idx = tags.indexOf(tag)
+  if (idx >= 0) {
+    tags.splice(idx, 1)
+  } else {
+    tags.push(tag)
+  }
+  tagFilter.value = tags.join(', ')
+}
 
 async function doSearch() {
   if (!query.value.trim()) return
   loading.value = true
   try {
-    results.value = await searchArticles(query.value, topN.value)
+    const tags = tagFilter.value.trim() || null
+    results.value = await searchArticles(query.value, topN.value, tags)
+    if (results.value.available_tags) {
+      availableTags.value = results.value.available_tags
+    }
   } catch (e) {
     results.value = { query: query.value, top_n: topN.value, results: [], total_found: 0, error: e.message }
   } finally {

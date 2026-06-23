@@ -61,6 +61,14 @@
           <label>Server Port</label>
           <input v-model.number="settings.server_port" type="number" />
         </div>
+        <div class="form-group">
+          <label>Web Search Provider</label>
+          <select v-model="settings.web_search_provider">
+            <option value="ddgs">DuckDuckGo (free, no key)</option>
+            <option value="tavily">Tavily (better results, no key)</option>
+            <option value="auto">Auto (Tavily first, DDGS fallback)</option>
+          </select>
+        </div>
       </div>
 
       <button class="btn btn-primary" @click="save" :disabled="saving">
@@ -98,6 +106,7 @@ const settings = ref({
   articles_dir: '.\\articles\\',
   database: 'articles_db.json',
   server_port: 8000,
+  web_search_provider: 'ddgs',
 })
 
 const saving = ref(false)

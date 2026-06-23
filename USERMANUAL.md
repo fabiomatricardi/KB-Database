@@ -53,7 +53,19 @@ Search through article metadata (title, subheading, summary) that has been extra
 - Article title and subheading
 - BM25 relevance score
 - Summary, clickable URL, and source file path
+- Tags (clickable `#tag` badges to filter)
+- Table of Contents (section headings)
 - Click a result card to expand/collapse details
+
+### Tag Filtering
+
+Filter search results by tags extracted from articles:
+
+1. After searching, available tags appear as badges above the results
+2. Click a tag badge to toggle it on/off
+3. Results are filtered to show only articles matching the selected tags
+4. Use the tag filter input above the search bar to enter custom tags
+5. Combine multiple tags for intersection filtering (articles must have all selected tags)
 
 ---
 
@@ -129,14 +141,39 @@ Scan article files and extract metadata (title, subheading, URL, summary) using 
 3. Click **Start Scan**
 4. Watch the progress bar as files are processed
 
-**Notes:**
-- Only processes new files (skips already-scanned files)
-- Supports `.txt`, `.md`, and `.html` files
-- Requires Ollama running with a compatible model
+**Scan & Extract** now extracts:
+- **Tags**: 3-5 hashtags for categorization
+- **Table of Contents**: section headings for quick navigation
+- Tags appear as clickable badges in search results
+- TOC appears as an indented list in expanded result cards
 
 ---
 
-### 5. Settings
+### 5. Knowledge Graph
+
+Build and explore an interactive knowledge graph from your articles using graphify.
+
+**How to use:**
+1. Click **Knowledge Graph** in the sidebar
+2. Click **Build Knowledge Graph** to start the conversion process
+3. The system will:
+   - Convert raw articles to structured Markdown with YAML frontmatter
+   - Run graphify to extract entities and relationships
+   - Detect communities in the knowledge graph
+   - Generate an interactive HTML visualization
+4. Once built, the graph displays in an embedded viewer
+5. Use **Graph Chat** to ask natural language questions about the graph
+
+**Graph features:**
+- Interactive node/edge visualization
+- Community detection with color-coded clusters
+- God nodes (highly connected entities)
+- Natural language query interface
+- Real-time build progress tracking
+
+---
+
+### 6. Settings
 
 Configure application defaults.
 
@@ -146,6 +183,7 @@ Configure application defaults.
 - **Articles Directory**: default folder for scanning
 - **Database File**: path to the JSON database
 - **Server Port**: web server port (default: 8000)
+- **Web Search Provider**: choose between `ddgs` (DuckDuckGo), `tavily` (keyless), or `auto` (Tavily first, DDGS fallback)
 
 **Fetch Models:**
 - Click **Fetch Models** to query your Ollama instance for available models
@@ -166,10 +204,10 @@ ArticleDatabase/
 ├── backend/            # FastAPI server
 │   ├── main.py         # App entry, routes, static mount
 │   ├── models.py       # Pydantic models
-│   ├── routers/        # API endpoints (search, deepsearch, scan, chat)
-│   └── services/       # Business logic (bm25, scanner, chat, config)
+│   ├── routers/        # API endpoints (search, deepsearch, scan, chat, web, graph)
+│   └── services/       # Business logic (bm25, scanner, chat, config, web, graph)
 ├── frontend/           # Vue 3 + Vite UI
-│   └── src/components/ # SearchView, DeepSearchView, ChatView, ScanView, SettingsPanel
+│   └── src/components/ # SearchView, DeepSearchView, ChatView, ScanView, SettingsPanel, GraphView
 ├── dist/               # Built .exe
 ├── build.py            # PyInstaller build script
 └── run-dev.bat         # Quick dev launcher
@@ -180,6 +218,8 @@ ArticleDatabase/
 - **Frontend**: Vue 3, Vite, marked (Markdown rendering)
 - **Packaging**: PyInstaller (standalone .exe)
 - **LLM**: Ollama (OpenAI-compatible API)
+- **Web Search**: DuckDuckGo (ddgs), Tavily (keyless optional)
+- **Knowledge Graph**: graphify CLI (Wiki conversion + community detection)
 
 ---
 
@@ -241,8 +281,8 @@ Search the web and load pages as context for Chat conversations.
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/search?q=&top_n=` | GET | Search article metadata |
-| `/api/deepsearch?query=&dir=&top_n=` | GET | Full-text file search |
+| `/api/search?q=&top_n=&tags=` | GET | Search article metadata with tag filtering |
+| `/api/deepsearch?query=&dir=&top_n=&tags=` | GET | Full-text file search with tag filtering |
 | `/api/scan` | POST | Start Ollama scan |
 | `/api/scan/status` | GET | Scan progress |
 | `/api/ollama/models?filter_free=` | GET | List Ollama models |
@@ -251,8 +291,12 @@ Search the web and load pages as context for Chat conversations.
 | `/api/chat/message` | POST | Send chat message (SSE stream) |
 | `/api/chat/history` | GET | Get conversation history |
 | `/api/chat/history` | DELETE | Clear history |
-| `/api/web/search?q=&max_results=` | GET | Search the web via DuckDuckGo |
+| `/api/web/search?q=&max_results=` | GET | Search the web via DuckDuckGo or Tavily |
 | `/api/web/fetch` | POST | Fetch and parse a URL |
+| `/api/graph/build` | POST | Build knowledge graph from articles |
+| `/api/graph/status` | GET | Graph build progress |
+| `/api/graph/html` | GET | Serve graph.html |
+| `/api/graph/query` | POST | Query the knowledge graph |
 | `/api/settings` | GET/PUT | App configuration |
 | `/api/shutdown` | POST | Stop application |
 

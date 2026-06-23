@@ -26,13 +26,17 @@ def extract_metadata(host: str, model: str, file_content: str) -> dict:
     2. Subheading (if any, otherwise provide a brief hook)
     3. Original URL (look for links, source URLs, or metadata at the top/bottom. If not found, output "None")
     4. A short summary (2-3 sentences)
+    5. Table of Contents (list of section headings found in the article, or empty list if none)
+    6. Tags (3-5 relevant topic tags/hashtags for categorization, lowercase, no # prefix)
 
     Respond ONLY with a valid JSON object matching this schema. Do not include markdown formatting like ```json or any conversational text.
     {{
         "title": "string",
         "subheading": "string",
         "url": "string",
-        "summary": "string"
+        "summary": "string",
+        "toc": ["string"],
+        "tags": ["string"]
     }}
 
     Article Content:

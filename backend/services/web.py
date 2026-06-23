@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from ddgs import DDGS
 
 
-def web_search(query: str, max_results: int = 10) -> list[dict]:
+def web_search_ddgs(query: str, max_results: int = 10) -> list[dict]:
     try:
         ddgs = DDGS()
         results = list(ddgs.text(query, max_results=max_results))
@@ -12,7 +12,33 @@ def web_search(query: str, max_results: int = 10) -> list[dict]:
             for r in results
         ]
     except Exception as e:
-        return [{"title": "Search error", "url": "", "snippet": str(e)}]
+        return [{"title": "Search error (DDGS)", "url": "", "snippet": str(e)}]
+
+
+def web_search_tavily(query: str, max_results: int = 10) -> list[dict]:
+    try:
+        from tavily import TavilyClient
+        client = TavilyClient()
+        response = client.search(query, max_results=max_results)
+        results = response.get("results", [])
+        return [
+            {"title": r.get("title", ""), "url": r.get("url", ""), "snippet": r.get("content", "")[:300]}
+            for r in results
+        ]
+    except Exception as e:
+        return [{"title": "Search error (Tavily)", "url": "", "snippet": str(e)}]
+
+
+def web_search(query: str, max_results: int = 10, provider: str = "ddgs") -> list[dict]:
+    if provider == "tavily":
+        return web_search_tavily(query, max_results)
+    elif provider == "auto":
+        results = web_search_tavily(query, max_results)
+        if results and "Search error" not in results[0].get("title", ""):
+            return results
+        return web_search_ddgs(query, max_results)
+    else:
+        return web_search_ddgs(query, max_results)
 
 
 def web_fetch(url: str) -> dict:

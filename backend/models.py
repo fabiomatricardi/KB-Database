@@ -6,6 +6,8 @@ class Article(BaseModel):
     subheading: str = ""
     url: str = ""
     summary: str = ""
+    toc: list[str] = []
+    tags: list[str] = []
     filename: str = ""
     file_path: str = ""
 
