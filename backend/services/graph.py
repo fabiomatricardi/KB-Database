@@ -189,12 +189,24 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
 
         env = _build_graphify_env(backend, host, model, api_key, base_url, max_output_tokens, max_concurrency)
 
+        patch_code = (
+            "import tiktoken as _tk; "
+            "_oe = _tk.get_encoding; "
+            "def _pe(n='cl100k_base'): "
+            "  e=_oe(n); "
+            "  _se=e.encode; "
+            "  def _safe(t,*a,**k): k.setdefault('allowed_special','all'); return _se(t,*a,**k); "
+            "  e.encode=_safe; "
+            "  return e; "
+            "_tk.get_encoding=_pe; "
+        )
+
         _graph_state["stage"] = "extract"
         _graph_state["message"] = f"Running graphify extract ({backend})..."
         _graph_state["progress"] = 40
 
         result = subprocess.run(
-            ["graphify", "extract", wiki_dir, "--backend", backend, "--max-concurrency", str(max_concurrency)],
+            ["python", "-c", patch_code, "-m", "graphify", "extract", wiki_dir, "--backend", backend, "--max-concurrency", str(max_concurrency)],
             env=env,
             capture_output=True,
             text=True,
@@ -211,7 +223,7 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
 
         label_model = model if model else ""
         result = subprocess.run(
-            ["graphify", "label", wiki_dir, "--backend", backend, "--model", label_model],
+            ["python", "-c", patch_code, "-m", "graphify", "label", wiki_dir, "--backend", backend, "--model", label_model],
             env=env,
             capture_output=True,
             text=True,
@@ -267,8 +279,20 @@ def _get_graph_path(articles_dir: str) -> str | None:
 
 
 def _run_graphify_cli(args: list[str], timeout: int = 60) -> str:
+    patch_code = (
+        "import tiktoken as _tk; "
+        "_oe = _tk.get_encoding; "
+        "def _pe(n='cl100k_base'): "
+        "  e=_oe(n); "
+        "  _se=e.encode; "
+        "  def _safe(t,*a,**k): k.setdefault('allowed_special','all'); return _se(t,*a,**k); "
+        "  e.encode=_safe; "
+        "  return e; "
+        "_tk.get_encoding=_pe; "
+    )
+    cmd = ["python", "-c", patch_code, "-m", "graphify"] + args
     result = subprocess.run(
-        ["graphify"] + args,
+        cmd,
         capture_output=True,
         text=True,
         timeout=timeout,
