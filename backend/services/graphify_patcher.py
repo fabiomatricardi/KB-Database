@@ -20,7 +20,7 @@ def _patched_get_encoding(name="cl100k_base"):
 _tk.get_encoding = _patched_get_encoding
 
 import sys
-from graphify.__main__ import cli
+from graphify.__main__ import main
 
 sys.argv = ["graphify"] + sys.argv[1:]
-cli()
+main()
