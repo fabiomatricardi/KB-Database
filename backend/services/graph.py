@@ -217,8 +217,9 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
         _graph_state["stage"] = "html"
         _graph_state["message"] = "Generating graph HTML visualization..."
 
+        graph_json = os.path.join(wiki_dir, "graphify-out", "graph.json")
         result = subprocess.run(
-            ["python", _PATCHER, "html", wiki_dir],
+            ["python", _PATCHER, "export", "html", "--graph", graph_json],
             env=env,
             capture_output=True,
             text=True,

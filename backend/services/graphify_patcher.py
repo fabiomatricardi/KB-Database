@@ -10,7 +10,7 @@ import sys
 # Auto-upgrade graphify if the installed version is too old (< 0.8.39).
 # The html and cluster-only commands require a recent version.
 subprocess.run(
-    [sys.executable, "-m", "pip", "install", "--quiet", "graphifyy>=0.8.46"],
+    [sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "graphifyy>=0.8.46"],
     check=False,
     timeout=60,
 )
