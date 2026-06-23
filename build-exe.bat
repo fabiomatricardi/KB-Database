@@ -1,6 +1,6 @@
 @echo off
 echo ============================================
-echo   Building ArticleDatabase v0.3.0
+echo   Building ArticleDatabase v0.3.1
 echo ============================================
 echo.
 
@@ -32,6 +32,6 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo ============================================
-echo   DONE! Output: dist\ArticleDatabase-v0.3.0.exe
+echo   DONE! Output: dist\ArticleDatabase-v0.3.1.exe
 echo ============================================
 pause
