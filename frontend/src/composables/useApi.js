@@ -49,6 +49,21 @@ export async function getOllamaModels(filterFree = false) {
   return data
 }
 
+export async function getGraphifyModels(backend = 'ollama') {
+  const { data } = await api.get('/graphify/models', { params: { backend } })
+  return data
+}
+
+export async function saveModel(model, backend) {
+  const { data } = await api.post('/saved_models', { model, backend })
+  return data
+}
+
+export async function deleteSavedModel(model, backend) {
+  const { data } = await api.delete('/saved_models', { data: { model, backend } })
+  return data
+}
+
 export async function getChatContext() {
   const { data } = await api.get('/chat/context')
   return data

@@ -83,6 +83,75 @@ def api_shutdown():
     os._exit(0)
 
 
+@app.get("/api/graphify/models")
+def api_graphify_models(backend: str = "ollama"):
+    config = load_config()
+    host = config.get("host", "http://localhost:11434")
+    api_key = config.get("graphify_api_key", "")
+    base_url = config.get("graphify_base_url", "")
+
+    import requests
+    try:
+        if backend == "ollama":
+            resp = requests.get(f"{host.rstrip('/')}/v1/models", timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+            models = [m["id"] for m in data.get("data", [])]
+            return {"models": models}
+        elif backend == "openrouter":
+            headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+            resp = requests.get("https://openrouter.ai/api/v1/models", headers=headers, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            models = [m["id"] for m in data.get("data", [])]
+            return {"models": models}
+        elif backend == "gemini":
+            models = [
+                "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash",
+                "gemini-1.5-flash", "gemini-1.5-pro",
+            ]
+            return {"models": models}
+        elif backend == "openai":
+            headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+            url = (base_url or "https://api.openai.com/v1") + "/models"
+            resp = requests.get(url, headers=headers, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            models = [m["id"] for m in data.get("data", [])]
+            return {"models": models}
+        return {"models": [], "error": f"Unknown backend: {backend}"}
+    except Exception as e:
+        return {"models": [], "error": str(e)}
+
+
+@app.post("/api/saved_models")
+def api_save_model(payload: dict):
+    model = payload.get("model", "").strip()
+    backend = payload.get("backend", "")
+    if not model:
+        return {"error": "Model name is required"}
+    config = load_config()
+    saved = config.get("saved_models", [])
+    entry = {"model": model, "backend": backend}
+    if entry not in saved:
+        saved.append(entry)
+        config["saved_models"] = saved
+        save_config(config)
+    return {"status": "ok", "saved_models": saved}
+
+
+@app.delete("/api/saved_models")
+def api_delete_saved_model(payload: dict):
+    model = payload.get("model", "")
+    backend = payload.get("backend", "")
+    config = load_config()
+    saved = config.get("saved_models", [])
+    saved = [s for s in saved if not (s["model"] == model and s.get("backend") == backend)]
+    config["saved_models"] = saved
+    save_config(config)
+    return {"status": "ok", "saved_models": saved}
+
+
 vue_dist = os.path.join(BASE_DIR, "frontend", "dist")
 
 if os.path.isdir(vue_dist):

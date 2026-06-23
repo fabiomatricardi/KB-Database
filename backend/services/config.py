@@ -16,6 +16,7 @@ DEFAULTS = {
     "graphify_base_url": "",
     "graphify_max_output_tokens": 8192,
     "graphify_max_concurrency": 1,
+    "saved_models": [],
 }
 
 

@@ -5,6 +5,24 @@ import threading
 
 from openai import OpenAI
 
+# Monkey-patch tiktoken to allow special tokens (e.g. <|im_start|>) in content.
+# graphify's _estimate_file_tokens() calls encode() without allowed_special,
+# which crashes when article content contains LLM chat template tokens.
+try:
+    import tiktoken as _tiktoken
+    _original_get_encoding = _tiktoken.get_encoding
+    def _patched_get_encoding(name: str = "cl100k_base"):
+        enc = _original_get_encoding(name)
+        _orig_encode = enc.encode
+        def _safe_encode(text, *args, **kwargs):
+            kwargs.setdefault("allowed_special", "all")
+            return _orig_encode(text, *args, **kwargs)
+        enc.encode = _safe_encode
+        return enc
+    _tiktoken.get_encoding = _patched_get_encoding
+except ImportError:
+    pass
+
 
 _graph_state = {
     "running": False,

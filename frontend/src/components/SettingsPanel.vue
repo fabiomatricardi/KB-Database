@@ -83,9 +83,55 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Graphify Model (optional)</label>
-          <input v-model="settings.graphify_model" type="text" placeholder="empty = backend default" />
+          <label>Graphify Model</label>
+          <div style="display: flex; gap: 8px;">
+            <input v-model="settings.graphify_model" type="text" style="flex: 1;" placeholder="empty = backend default" />
+            <button class="btn btn-secondary" @click="fetchGraphifyModels" :disabled="fetchingGfModels" style="white-space: nowrap;">
+              <i class="pi pi-refresh"></i>
+              {{ fetchingGfModels ? 'Fetching...' : 'Fetch' }}
+            </button>
+          </div>
         </div>
+      </div>
+      <div v-if="gfModels.length > 0" class="form-group" style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <label style="margin-bottom: 0;">Available {{ settings.graphify_backend }} Models</label>
+        </div>
+        <div class="model-list">
+          <div
+            v-for="model in gfModels"
+            :key="model"
+            class="model-chip"
+            :class="{ active: settings.graphify_model === model }"
+            @click="settings.graphify_model = model"
+          >
+            {{ model }}
+          </div>
+        </div>
+      </div>
+      <div v-if="gfSaved.length > 0" class="form-group" style="margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <label style="margin-bottom: 0;">Saved Models</label>
+        </div>
+        <div class="model-list">
+          <div
+            v-for="entry in gfSaved"
+            :key="entry.model + entry.backend"
+            class="model-chip"
+            :class="{ active: settings.graphify_model === entry.model && settings.graphify_backend === entry.backend }"
+            @click="settings.graphify_model = entry.model; settings.graphify_backend = entry.backend"
+            style="cursor: pointer; position: relative;"
+          >
+            <span class="badge badge-sm" :class="'badge-' + entry.backend" style="margin-right: 4px; font-size: 9px;">{{ entry.backend }}</span>
+            {{ entry.model }}
+            <span class="model-chip-remove" @click.stop="removeSavedModel(entry.model, entry.backend)">&times;</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <button class="btn btn-secondary" @click="saveCurrentModel" :disabled="!settings.graphify_model" style="font-size: 12px;">
+          <i class="pi pi-plus"></i> Save Current Model
+        </button>
       </div>
       <div v-if="settings.graphify_backend !== 'ollama'" class="config-grid">
         <div class="form-group">
@@ -135,7 +181,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getSettings, updateSettings, shutdownApp, getOllamaModels } from '../composables/useApi.js'
+import { getSettings, updateSettings, shutdownApp, getOllamaModels, getGraphifyModels, saveModel, deleteSavedModel } from '../composables/useApi.js'
 
 const settings = ref({
   host: 'http://localhost:11434',
@@ -159,10 +205,15 @@ const ollamaModels = ref([])
 const ollamaError = ref('')
 const fetchingModels = ref(false)
 const freeOnly = ref(true)
+const gfModels = ref([])
+const fetchingGfModels = ref(false)
+const gfSaved = ref([])
 
 onMounted(async () => {
   try {
-    settings.value = await getSettings()
+    const s = await getSettings()
+    settings.value = s
+    gfSaved.value = s.saved_models || []
   } catch (e) { /* use defaults */ }
 })
 
@@ -184,10 +235,46 @@ async function fetchModels() {
   }
 }
 
+async function fetchGraphifyModels() {
+  fetchingGfModels.value = true
+  gfModels.value = []
+  try {
+    const result = await getGraphifyModels(settings.value.graphify_backend)
+    gfModels.value = result.models || []
+    if (result.error) {
+      ollamaError.value = result.error
+    }
+  } catch (e) {
+    ollamaError.value = 'Failed to fetch models: ' + e.message
+  } finally {
+    fetchingGfModels.value = false
+  }
+}
+
+async function saveCurrentModel() {
+  if (!settings.value.graphify_model) return
+  try {
+    const result = await saveModel(settings.value.graphify_model, settings.value.graphify_backend)
+    gfSaved.value = result.saved_models || []
+  } catch (e) {
+    alert('Failed to save model: ' + e.message)
+  }
+}
+
+async function removeSavedModel(model, backend) {
+  try {
+    const result = await deleteSavedModel(model, backend)
+    gfSaved.value = result.saved_models || []
+  } catch (e) {
+    alert('Failed to remove model: ' + e.message)
+  }
+}
+
 async function save() {
   saving.value = true
   saved.value = false
   try {
+    settings.value.saved_models = gfSaved.value
     await updateSettings(settings.value)
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)
