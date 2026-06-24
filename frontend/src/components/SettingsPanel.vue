@@ -154,6 +154,37 @@
         </div>
       </div>
 
+      <div class="config-section-title">Tags &amp; Categories</div>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+        Define allowed tags for article scanning. When tags are set, the model will assign only from this list.
+      </p>
+      <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+        <input
+          v-model="newTag"
+          type="text"
+          placeholder="Add a tag (e.g. artificial-intelligence)"
+          @keyup.enter="addTag"
+          style="flex: 1;"
+        />
+        <button class="btn btn-secondary" @click="addTag" :disabled="!newTag.trim()">
+          <i class="pi pi-plus"></i> Add
+        </button>
+      </div>
+      <div v-if="settings.tags_list && settings.tags_list.length > 0" class="model-list">
+        <div
+          v-for="tag in settings.tags_list"
+          :key="tag"
+          class="model-chip"
+          style="cursor: default;"
+        >
+          {{ tag }}
+          <span class="model-chip-remove" @click.stop="removeTag(tag)">&times;</span>
+        </div>
+      </div>
+      <div v-else style="font-size: 12px; color: var(--text-secondary); font-style: italic;">
+        No tags defined. Leave empty for free-form tag extraction.
+      </div>
+
       <button class="btn btn-primary" @click="save" :disabled="saving">
         <i class="pi pi-save"></i>
         {{ saving ? 'Saving...' : 'Save Settings' }}
@@ -196,6 +227,7 @@ const settings = ref({
   graphify_base_url: '',
   graphify_max_output_tokens: 8192,
   graphify_max_concurrency: 1,
+  tags_list: [],
 })
 
 const saving = ref(false)
@@ -208,6 +240,7 @@ const freeOnly = ref(true)
 const gfModels = ref([])
 const fetchingGfModels = ref(false)
 const gfSaved = ref([])
+const newTag = ref('')
 
 onMounted(async () => {
   try {
@@ -268,6 +301,20 @@ async function removeSavedModel(model, backend) {
   } catch (e) {
     alert('Failed to remove model: ' + e.message)
   }
+}
+
+function addTag() {
+  const tag = newTag.value.trim().toLowerCase()
+  if (!tag) return
+  if (!settings.value.tags_list) settings.value.tags_list = []
+  if (settings.value.tags_list.includes(tag)) return
+  settings.value.tags_list.push(tag)
+  newTag.value = ''
+}
+
+function removeTag(tag) {
+  if (!settings.value.tags_list) return
+  settings.value.tags_list = settings.value.tags_list.filter(t => t !== tag)
 }
 
 async function save() {

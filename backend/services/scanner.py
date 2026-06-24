@@ -17,8 +17,17 @@ def get_scan_status() -> dict:
     return dict(_scan_state)
 
 
-def extract_metadata(host: str, model: str, file_content: str) -> dict:
+def extract_metadata(host: str, model: str, file_content: str, tags_list: list[str] | None = None) -> dict:
     system_prompt = "You are a precise data extractor. Your job is to extract metadata from articles and output ONLY raw valid JSON."
+
+    if tags_list:
+        tags_instruction = (
+            f"6. Tags (MUST choose ONLY from the approved list: {tags_list}. "
+            "Do NOT invent new tags. Assign 1-3 tags that best match the article. "
+            "If none apply, assign the single most relevant tag from the list.)"
+        )
+    else:
+        tags_instruction = "6. Tags (3-5 relevant topic tags/hashtags for categorization, lowercase, no # prefix)"
 
     user_prompt = f"""
     Analyze the following article text and extract:
@@ -27,7 +36,7 @@ def extract_metadata(host: str, model: str, file_content: str) -> dict:
     3. Original URL (look for links, source URLs, or metadata at the top/bottom. If not found, output "None")
     4. A short summary (2-3 sentences)
     5. Table of Contents (list of section headings found in the article, or empty list if none)
-    6. Tags (3-5 relevant topic tags/hashtags for categorization, lowercase, no # prefix)
+    {tags_instruction}
 
     Respond ONLY with a valid JSON object matching this schema. Do not include markdown formatting like ```json or any conversational text.
     {{
@@ -70,7 +79,7 @@ def extract_metadata(host: str, model: str, file_content: str) -> dict:
         }
 
 
-def _run_scan_thread(host: str, model: str, directory: str, database_path: str):
+def _run_scan_thread(host: str, model: str, directory: str, database_path: str, tags_list: list[str] | None = None):
     global _scan_state
     _scan_state["running"] = True
     _scan_state["message"] = "Starting scan..."
@@ -102,7 +111,7 @@ def _run_scan_thread(host: str, model: str, directory: str, database_path: str):
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
-            metadata = extract_metadata(host, model, content)
+            metadata = extract_metadata(host, model, content, tags_list=tags_list)
             metadata["filename"] = file
             metadata["file_path"] = file_path
             database.append(metadata)
@@ -118,14 +127,22 @@ def _run_scan_thread(host: str, model: str, directory: str, database_path: str):
     _scan_state["message"] = f"Scan complete. {len(database)} entries in database."
     _scan_state["current_file"] = ""
 
+    try:
+        from backend.services.config import load_config, save_config, compute_tags_hash
+        cfg = load_config()
+        cfg["tags_hash_at_last_scan"] = compute_tags_hash(cfg.get("tags_list", []))
+        save_config(cfg)
+    except Exception:
+        pass
 
-def start_scan(host: str, model: str, directory: str, database_path: str) -> dict:
+
+def start_scan(host: str, model: str, directory: str, database_path: str, tags_list: list[str] | None = None) -> dict:
     if _scan_state["running"]:
         return {"error": "A scan is already in progress."}
 
     thread = threading.Thread(
         target=_run_scan_thread,
-        args=(host, model, directory, database_path),
+        args=(host, model, directory, database_path, tags_list),
         daemon=True,
     )
     thread.start()

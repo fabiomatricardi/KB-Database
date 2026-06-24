@@ -124,7 +124,7 @@ def chat_stream(message: str, host: str, model: str):
 
     full_response = ""
     try:
-        with requests.post(url, json=payload, timeout=120, stream=True) as resp:
+        with requests.post(url, json=payload, timeout=600, stream=True) as resp:
             resp.raise_for_status()
             resp.encoding = 'utf-8'
             for line in resp.iter_lines(decode_unicode=True):

@@ -17,7 +17,14 @@ DEFAULTS = {
     "graphify_max_output_tokens": 8192,
     "graphify_max_concurrency": 1,
     "saved_models": [],
+    "tags_list": [],
+    "tags_hash": "",
+    "tags_hash_at_last_scan": "",
 }
+
+
+def compute_tags_hash(tags: list[str]) -> str:
+    return "|".join(sorted([t.lower().strip() for t in tags if t.strip()]))
 
 
 def load_config() -> dict:

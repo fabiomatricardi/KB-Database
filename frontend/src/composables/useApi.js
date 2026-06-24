@@ -29,6 +29,11 @@ export async function getScanStatus() {
   return data
 }
 
+export async function getTagsChanged() {
+  const { data } = await api.get('/scan/tags-check')
+  return data
+}
+
 export async function getSettings() {
   const { data } = await api.get('/settings')
   return data

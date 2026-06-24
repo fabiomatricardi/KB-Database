@@ -6,6 +6,13 @@
     </div>
 
     <div class="scan-config">
+      <div v-if="tagsWarning" class="alert-banner" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 13px;">
+        <i class="pi pi-exclamation-triangle" style="color: #f59e0b; font-size: 16px;"></i>
+        <div>
+          <strong>Tags configuration changed.</strong>
+          A full rescan is recommended to update article tags with the new categories.
+        </div>
+      </div>
       <div class="config-grid">
         <div class="form-group">
           <label>Ollama Host</label>
@@ -54,7 +61,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getSettings, startScan, getScanStatus } from '../composables/useApi.js'
+import { getSettings, startScan, getScanStatus, getTagsChanged } from '../composables/useApi.js'
 
 const config = ref({
   host: 'http://localhost:11434',
@@ -65,6 +72,7 @@ const config = ref({
 
 const scanning = ref(false)
 const scanStatus = ref(null)
+const tagsWarning = ref(false)
 let pollInterval = null
 
 onMounted(async () => {
@@ -76,6 +84,11 @@ onMounted(async () => {
   try {
     scanStatus.value = await getScanStatus()
     if (scanStatus.value.running) startPolling()
+  } catch (e) { /* ignore */ }
+
+  try {
+    const tagsCheck = await getTagsChanged()
+    tagsWarning.value = tagsCheck.changed || tagsCheck.never_scanned
   } catch (e) { /* ignore */ }
 })
 
@@ -92,6 +105,7 @@ function startPolling() {
         clearInterval(pollInterval)
         pollInterval = null
         scanning.value = false
+        tagsWarning.value = false
       }
     } catch (e) { /* ignore */ }
   }, 1000)

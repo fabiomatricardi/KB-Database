@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.routers import search, deepsearch, scan, chat, web, graph
-from backend.services.config import load_config, save_config, DEFAULTS
+from backend.services.config import load_config, save_config, DEFAULTS, compute_tags_hash
 
 
 def get_base_dir() -> str:
@@ -57,6 +57,8 @@ def api_get_settings():
 @app.put("/api/settings")
 def api_update_settings(config: dict):
     merged = {**DEFAULTS, **config}
+    if "tags_list" in merged:
+        merged["tags_hash"] = compute_tags_hash(merged.get("tags_list", []))
     save_config(merged)
     return {"status": "ok", "config": merged}
 
