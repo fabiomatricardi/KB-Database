@@ -217,16 +217,24 @@ def _run_graph_build(articles_dir: str, database_path: str, host: str, model: st
         _graph_state["stage"] = "label"
         _graph_state["message"] = "Labeling communities..."
 
-        label_model = model if model else ""
+        label_cmd = ["python", _PATCHER, "label", wiki_dir, "--backend", backend]
+        if model:
+            label_cmd.extend(["--model", model])
         result = subprocess.run(
-            ["python", _PATCHER, "label", wiki_dir, "--backend", backend, "--model", label_model],
+            label_cmd,
             env=env,
             capture_output=True,
             text=True,
             timeout=300,
         )
         if result.returncode != 0:
-            _graph_state["message"] = f"Community labeling failed (using placeholders): {result.stderr[:150]}"
+            _graph_state["message"] = f"Community labeling failed (using placeholders): {result.stderr[:200]}"
+        else:
+            labels_path = os.path.join(wiki_dir, "graphify-out", ".graphify_labels.json")
+            if os.path.isfile(labels_path):
+                _graph_state["message"] = "Communities labeled successfully"
+            else:
+                _graph_state["message"] = "Labeling completed but labels file not found (using placeholders)"
 
         _graph_state["progress"] = 85
         _graph_state["stage"] = "html"
@@ -330,10 +338,16 @@ def graph_query_llm(question: str, articles_dir: str, backend: str, model: str,
     if not graph_path:
         return "No knowledge graph found. Build it first."
 
-    raw = _run_graphify_cli(["query", question, "--graph", graph_path, "--budget", "2000"])
+    try:
+        raw = _run_graphify_cli(["query", question, "--graph", graph_path, "--budget", "2000"])
+    except Exception as e:
+        return f"Graph query failed: {e}"
 
-    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
-    return _call_llm(client, llm_model, QUERY_SYSTEM_PROMPT, f"Question: {question}\n\nGraph traversal results:\n{raw}")
+    try:
+        client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+        return _call_llm(client, llm_model, QUERY_SYSTEM_PROMPT, f"Question: {question}\n\nGraph traversal results:\n{raw}")
+    except Exception as e:
+        return f"LLM query failed: {e}\n\nRaw graph data:\n{raw}"
 
 
 def graph_explain(concept: str, articles_dir: str, backend: str, model: str,
@@ -342,10 +356,16 @@ def graph_explain(concept: str, articles_dir: str, backend: str, model: str,
     if not graph_path:
         return "No knowledge graph found. Build it first."
 
-    raw = _run_graphify_cli(["explain", concept, "--graph", graph_path])
+    try:
+        raw = _run_graphify_cli(["explain", concept, "--graph", graph_path])
+    except Exception as e:
+        return f"Graph explain failed: {e}"
 
-    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
-    return _call_llm(client, llm_model, EXPLAIN_SYSTEM_PROMPT, f"Explain: {concept}\n\nGraph data:\n{raw}")
+    try:
+        client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+        return _call_llm(client, llm_model, EXPLAIN_SYSTEM_PROMPT, f"Explain: {concept}\n\nGraph data:\n{raw}")
+    except Exception as e:
+        return f"LLM explain failed: {e}\n\nRaw graph data:\n{raw}"
 
 
 def graph_path(start: str, end: str, articles_dir: str, backend: str, model: str,
@@ -354,7 +374,13 @@ def graph_path(start: str, end: str, articles_dir: str, backend: str, model: str
     if not graph_path:
         return "No knowledge graph found. Build it first."
 
-    raw = _run_graphify_cli(["path", start, end, "--graph", graph_path])
+    try:
+        raw = _run_graphify_cli(["path", start, end, "--graph", graph_path])
+    except Exception as e:
+        return f"Graph path failed: {e}"
 
-    client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
-    return _call_llm(client, llm_model, PATH_SYSTEM_PROMPT, f"Find path from '{start}' to '{end}'\n\nPath results:\n{raw}")
+    try:
+        client, llm_model = _get_llm_client(backend, "", model, api_key, base_url)
+        return _call_llm(client, llm_model, PATH_SYSTEM_PROMPT, f"Find path from '{start}' to '{end}'\n\nPath results:\n{raw}")
+    except Exception as e:
+        return f"LLM path failed: {e}\n\nRaw path data:\n{raw}"

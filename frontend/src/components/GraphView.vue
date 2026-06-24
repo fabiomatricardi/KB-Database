@@ -51,12 +51,6 @@
       </button>
     </div>
 
-    <div v-if="graphHtml && !building" class="graph-container">
-      <div class="graph-frame-wrapper">
-        <iframe :srcdoc="graphHtml" class="graph-iframe"></iframe>
-      </div>
-    </div>
-
     <div v-if="building" class="graph-building">
       <div class="progress-bar-container" v-if="buildProgress > 0">
         <div class="progress-bar" :style="{ width: buildProgress + '%' }"></div>
@@ -64,7 +58,14 @@
       <div class="build-stage">{{ buildStage }}</div>
     </div>
 
-    <div v-if="graphHtml" class="graph-tools">
+    <div v-if="graphHtml && !building" class="graph-main">
+      <div class="graph-container">
+        <div class="graph-frame-wrapper">
+          <iframe :srcdoc="graphHtml" class="graph-iframe"></iframe>
+        </div>
+      </div>
+
+      <div class="graph-tools">
       <h3><i class="pi pi-comments"></i> Graph Tools</h3>
 
       <div class="graph-tabs">
@@ -113,6 +114,7 @@
         <div class="field-label">Answer</div>
         <div class="field-value" style="white-space: pre-wrap;">{{ graphAnswer }}</div>
       </div>
+    </div>
     </div>
   </div>
 </template>

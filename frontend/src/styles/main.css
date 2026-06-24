@@ -1176,8 +1176,7 @@ select:focus {
   height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
-  padding-bottom: 40px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .graph-build-bar {
@@ -1199,25 +1198,33 @@ select:focus {
   font-size: 13px;
 }
 
-.graph-container {
+.graph-main {
   flex: 1;
+  overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  gap: 16px;
+  padding-bottom: 16px;
 }
 
-.graph-frame-wrapper {
-  flex: 1;
+.graph-container {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
   min-height: 400px;
 }
 
+.graph-frame-wrapper {
+  width: 100%;
+  height: 500px;
+}
+
 .graph-iframe {
   width: 100%;
   height: 100%;
   border: none;
+  display: block;
 }
 
 .graph-building {
@@ -1317,8 +1324,7 @@ select:focus {
 .backend-openai { color: #34d399; border: 1px solid #34d39940; }
 
 .graph-tools {
-  margin-top: 16px;
-  padding-top: 16px;
+  padding: 16px 0;
   border-top: 1px solid var(--border);
 }
 

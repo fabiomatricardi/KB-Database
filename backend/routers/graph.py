@@ -35,10 +35,11 @@ class GraphPathRequest(BaseModel):
 
 def _get_graph_config():
     config = load_config()
+    graphify_model = config.get("graphify_model", "")
     return {
         "articles_dir": config.get("articles_dir", ".\\articles\\"),
         "host": config.get("host", "http://localhost:11434"),
-        "model": config.get("model", "llama3"),
+        "model": graphify_model or config.get("model", "llama3"),
         "database": config.get("database", "articles_db.json"),
         "backend": config.get("graphify_backend", "ollama"),
         "api_key": config.get("graphify_api_key", ""),

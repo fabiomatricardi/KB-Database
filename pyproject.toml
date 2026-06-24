@@ -1,6 +1,6 @@
 [project]
 name = "articledatabase"
-version = "0.3.5"
+version = "0.3.6"
 description = "Article Database with BM25 search, Ollama scan, web search/fetch, knowledge graph, and web UI"
 readme = "README.md"
 requires-python = ">=3.12"
