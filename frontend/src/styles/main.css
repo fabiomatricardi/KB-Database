@@ -1416,3 +1416,43 @@ select:focus {
   font-size: 13px;
   line-height: 1.5;
 }
+
+.test-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.test-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.test-icon {
+  font-size: 16px;
+}
+
+.test-pass { color: #4ade80; }
+.test-fail { color: #f87171; }
+
+.test-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.test-meta {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.test-error {
+  color: #f87171;
+  font-style: italic;
+}

@@ -34,6 +34,11 @@ export async function getTagsChanged() {
   return data
 }
 
+export async function testChatConnection() {
+  const { data } = await api.post('/chat/test-connection')
+  return data
+}
+
 export async function getSettings() {
   const { data } = await api.get('/settings')
   return data
@@ -175,7 +180,7 @@ export function chatMessageStream(message, onChunk, onDone, onError) {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
-            if (data === '[DONE]') {
+            if (data.trim() === '[DONE]') {
               onDone()
               return
             }

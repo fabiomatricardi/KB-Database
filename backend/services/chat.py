@@ -119,33 +119,19 @@ def chat_stream(message: str, host: str, model: str):
         "model": model,
         "messages": messages,
         "temperature": 0.7,
-        "stream": True,
+        "stream": False,
     }
 
     full_response = ""
     try:
-        with requests.post(url, json=payload, timeout=600, stream=True) as resp:
-            resp.raise_for_status()
-            resp.encoding = 'utf-8'
-            for line in resp.iter_lines(decode_unicode=True):
-                if not line or not line.startswith("data: "):
-                    continue
-                data_str = line[6:]
-                if data_str.strip() == "[DONE]":
-                    break
-                try:
-                    chunk = json.loads(data_str)
-                    delta = chunk.get("choices", [{}])[0].get("delta", {})
-                    content = delta.get("content", "")
-                    if content:
-                        full_response += content
-                        yield f"data: {json.dumps({'chunk': content})}\n\n"
-                except json.JSONDecodeError:
-                    continue
+        resp = requests.post(url, json=payload, timeout=600)
+        resp.raise_for_status()
+        result = resp.json()
+        full_response = result["choices"][0]["message"]["content"] or ""
     except Exception as e:
-        error_msg = f"Error connecting to Ollama: {e}"
-        full_response = error_msg
-        yield f"data: {json.dumps({'chunk': error_msg})}\n\n"
+        full_response = f"Error connecting to Ollama: {e}"
+
+    yield f"data: {json.dumps({'chunk': full_response})}\n\n"
 
     _state["history"].append({"role": "user", "content": message})
     _state["history"].append({"role": "assistant", "content": full_response})

@@ -1,3 +1,5 @@
+import time
+import requests as http_requests
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
@@ -73,3 +75,63 @@ def api_chat_clear_history():
 @router.get("/history")
 def api_chat_get_history():
     return {"history": get_history()}
+
+
+@router.post("/test-connection")
+def api_chat_test_connection():
+    config = load_config()
+    host = config.get("host", "http://localhost:11434")
+    model = config.get("model", "llama3")
+    base = host.rstrip("/")
+
+    results = {}
+
+    t0 = time.time()
+    try:
+        r = http_requests.get(f"{base}/", timeout=5)
+        results["reachability"] = {"ok": r.status_code < 500, "ms": int((time.time() - t0) * 1000)}
+    except Exception as e:
+        results["reachability"] = {"ok": False, "error": str(e)[:120], "ms": int((time.time() - t0) * 1000)}
+
+    t0 = time.time()
+    try:
+        r = http_requests.get(f"{base}/v1/models", timeout=5)
+        models = [m["id"] for m in r.json().get("data", [])]
+        results["models_endpoint"] = {"ok": True, "count": len(models), "ms": int((time.time() - t0) * 1000)}
+    except Exception as e:
+        results["models_endpoint"] = {"ok": False, "error": str(e)[:120], "ms": int((time.time() - t0) * 1000)}
+
+    t0 = time.time()
+    try:
+        r = http_requests.post(
+            f"{base}/v1/chat/completions",
+            json={"model": model, "messages": [{"role": "user", "content": "Reply OK"}], "stream": False},
+            timeout=60,
+        )
+        r.raise_for_status()
+        content = r.json()["choices"][0]["message"]["content"][:100]
+        results["chat_nonstreaming"] = {"ok": True, "response": content, "ms": int((time.time() - t0) * 1000)}
+    except Exception as e:
+        results["chat_nonstreaming"] = {"ok": False, "error": str(e)[:120], "ms": int((time.time() - t0) * 1000)}
+
+    t0 = time.time()
+    try:
+        r = http_requests.post(
+            f"{base}/v1/chat/completions",
+            json={"model": model, "messages": [{"role": "user", "content": "Reply OK"}], "stream": True},
+            timeout=15,
+            stream=True,
+        )
+        r.raise_for_status()
+        first_chunk = ""
+        for line in r.iter_lines(decode_unicode=True):
+            if line and line.startswith("data: "):
+                first_chunk = line[6:]
+                break
+        results["chat_streaming"] = {"ok": bool(first_chunk), "ms": int((time.time() - t0) * 1000)}
+    except Exception as e:
+        results["chat_streaming"] = {"ok": False, "error": str(e)[:120], "ms": int((time.time() - t0) * 1000)}
+
+    results["model"] = model
+    results["host"] = host
+    return results

@@ -195,6 +195,27 @@
       </div>
     </div>
 
+    <div class="scan-config" style="margin-top: 24px;">
+      <div class="config-section-title">Test Connection</div>
+      <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+        Verify Ollama host, model availability, and chat endpoints.
+      </p>
+      <button class="btn btn-secondary" @click="runTests" :disabled="testing" style="margin-bottom: 12px;">
+        <i class="pi" :class="testing ? 'pi-spin pi-spinner' : 'pi-play'"></i>
+        {{ testing ? 'Running tests...' : 'Run Connection Tests' }}
+      </button>
+      <div v-if="testResults" class="test-results">
+        <div v-for="(test, key) in testChecks" :key="key" class="test-item">
+          <span class="test-icon" :class="test.ok ? 'test-pass' : 'test-fail'">
+            <i :class="test.ok ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+          </span>
+          <span class="test-label">{{ test.label }}</span>
+          <span class="test-meta" v-if="test.ok">{{ test.ms }}ms</span>
+          <span class="test-meta test-error" v-else>{{ test.error || 'Failed' }}</span>
+        </div>
+      </div>
+    </div>
+
     <div class="scan-config" style="border-color: rgba(233,69,96,0.3); margin-top: 24px;">
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <div>
@@ -211,8 +232,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getSettings, updateSettings, shutdownApp, getOllamaModels, getGraphifyModels, saveModel, deleteSavedModel } from '../composables/useApi.js'
+import { ref, computed, onMounted } from 'vue'
+import { getSettings, updateSettings, shutdownApp, getOllamaModels, getGraphifyModels, saveModel, deleteSavedModel, testChatConnection } from '../composables/useApi.js'
 
 const settings = ref({
   host: 'http://localhost:11434',
@@ -241,6 +262,8 @@ const gfModels = ref([])
 const fetchingGfModels = ref(false)
 const gfSaved = ref([])
 const newTag = ref('')
+const testing = ref(false)
+const testResults = ref(null)
 
 onMounted(async () => {
   try {
@@ -315,6 +338,35 @@ function addTag() {
 function removeTag(tag) {
   if (!settings.value.tags_list) return
   settings.value.tags_list = settings.value.tags_list.filter(t => t !== tag)
+}
+
+const testChecks = computed(() => {
+  if (!testResults.value) return []
+  const r = testResults.value
+  return [
+    { label: `Reachability (${r.host})`, ...r.reachability },
+    { label: 'Models endpoint (/v1/models)', ...r.models_endpoint },
+    { label: `Chat non-streaming (${r.model})`, ...r.chat_nonstreaming },
+    { label: 'Chat streaming (SSE)', ...r.chat_streaming },
+  ]
+})
+
+async function runTests() {
+  testing.value = true
+  testResults.value = null
+  try {
+    testResults.value = await testChatConnection()
+  } catch (e) {
+    testResults.value = {
+      host: '?', model: '?',
+      reachability: { ok: false, error: e.message, ms: 0 },
+      models_endpoint: { ok: false, error: e.message, ms: 0 },
+      chat_nonstreaming: { ok: false, error: e.message, ms: 0 },
+      chat_streaming: { ok: false, error: e.message, ms: 0 },
+    }
+  } finally {
+    testing.value = false
+  }
 }
 
 async function save() {

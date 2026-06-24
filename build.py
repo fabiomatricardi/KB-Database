@@ -32,7 +32,7 @@ def main():
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--noconsole",
-        "--name", "ArticleDatabase-v0.3.7",
+        "--name", "ArticleDatabase-v0.3.8",
         "--add-data", f"frontend{os.pathsep}frontend",
         "--add-data", f"articles{os.pathsep}articles",
         "--add-data", f"articles_db.json{os.pathsep}.",
@@ -75,7 +75,7 @@ def main():
     result = subprocess.run(cmd, cwd=project_root)
 
     if result.returncode == 0:
-        exe_path = os.path.join(project_root, "dist", "ArticleDatabase-v0.3.7.exe")
+        exe_path = os.path.join(project_root, "dist", "ArticleDatabase-v0.3.8.exe")
 
         # Unblock exe (Windows Smart App Control)
         try:
